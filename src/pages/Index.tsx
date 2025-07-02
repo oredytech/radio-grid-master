@@ -5,16 +5,19 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Label } from '@/components/ui/label';
-import { Radio, Mail, Lock, Eye, EyeOff } from 'lucide-react';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { Radio, Mail, Lock, Eye, EyeOff, User } from 'lucide-react';
 import { useAuth } from '@/contexts/AuthContext';
 import { toast } from 'sonner';
 
 const Index = () => {
-  const { user, login, isLoading } = useAuth();
-  const [email, setEmail] = useState('');
-  const [password, setPassword] = useState('');
+  const { user, login, register, isLoading } = useAuth();
+  const [loginData, setLoginData] = useState({ email: '', password: '' });
+  const [registerData, setRegisterData] = useState({ email: '', password: '', name: '' });
   const [showPassword, setShowPassword] = useState(false);
+  const [showRegisterPassword, setShowRegisterPassword] = useState(false);
   const [isLoggingIn, setIsLoggingIn] = useState(false);
+  const [isRegistering, setIsRegistering] = useState(false);
 
   if (user) {
     return <Navigate to="/dashboard" replace />;
@@ -22,19 +25,48 @@ const Index = () => {
 
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!email || !password) {
+    if (!loginData.email || !loginData.password) {
       toast.error('Veuillez remplir tous les champs');
       return;
     }
 
     setIsLoggingIn(true);
     try {
-      await login(email, password);
+      await login(loginData.email, loginData.password);
       toast.success('Connexion réussie !');
     } catch (error) {
       toast.error('Erreur de connexion');
     } finally {
       setIsLoggingIn(false);
+    }
+  };
+
+  const handleRegister = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!registerData.email || !registerData.password || !registerData.name) {
+      toast.error('Veuillez remplir tous les champs');
+      return;
+    }
+
+    if (registerData.password.length < 6) {
+      toast.error('Le mot de passe doit contenir au moins 6 caractères');
+      return;
+    }
+
+    setIsRegistering(true);
+    try {
+      await register(registerData.email, registerData.password, registerData.name);
+      toast.success('Compte créé avec succès !');
+    } catch (error: any) {
+      if (error.code === 'auth/email-already-in-use') {
+        toast.error('Cette adresse email est déjà utilisée');
+      } else if (error.code === 'auth/weak-password') {
+        toast.error('Le mot de passe est trop faible');
+      } else {
+        toast.error('Erreur lors de la création du compte');
+      }
+    } finally {
+      setIsRegistering(false);
     }
   };
 
@@ -67,82 +99,166 @@ const Index = () => {
           </div>
         </div>
 
-        {/* Login Form */}
+        {/* Auth Forms */}
         <Card className="backdrop-blur-sm bg-card/50 border-border/50">
           <CardHeader className="space-y-1 px-4 sm:px-6">
-            <CardTitle className="text-xl sm:text-2xl font-bold text-center">Connexion</CardTitle>
+            <CardTitle className="text-xl sm:text-2xl font-bold text-center">Accès Directeur</CardTitle>
             <CardDescription className="text-center text-sm sm:text-base">
-              Accédez à votre espace de programmation
+              Connectez-vous ou créez votre compte
             </CardDescription>
           </CardHeader>
           <CardContent className="px-4 sm:px-6">
-            <form onSubmit={handleLogin} className="space-y-4">
-              <div className="space-y-2">
-                <Label htmlFor="email" className="text-sm">Adresse e-mail</Label>
-                <div className="relative">
-                  <Mail className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
-                  <Input
-                    id="email"
-                    type="email"
-                    placeholder="directeur@radio.fm"
-                    value={email}
-                    onChange={(e) => setEmail(e.target.value)}
-                    className="pl-10"
-                    required
-                  />
-                </div>
-              </div>
+            <Tabs defaultValue="login" className="w-full">
+              <TabsList className="grid w-full grid-cols-2">
+                <TabsTrigger value="login">Connexion</TabsTrigger>
+                <TabsTrigger value="register">Inscription</TabsTrigger>
+              </TabsList>
               
-              <div className="space-y-2">
-                <Label htmlFor="password" className="text-sm">Mot de passe</Label>
-                <div className="relative">
-                  <Lock className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
-                  <Input
-                    id="password"
-                    type={showPassword ? "text" : "password"}
-                    placeholder="••••••••"
-                    value={password}
-                    onChange={(e) => setPassword(e.target.value)}
-                    className="pl-10 pr-10"
-                    required
-                  />
-                  <Button
-                    type="button"
-                    variant="ghost"
-                    size="sm"
-                    className="absolute right-0 top-0 h-full px-3 py-2 hover:bg-transparent"
-                    onClick={() => setShowPassword(!showPassword)}
+              <TabsContent value="login" className="space-y-4">
+                <form onSubmit={handleLogin} className="space-y-4">
+                  <div className="space-y-2">
+                    <Label htmlFor="login-email" className="text-sm">Adresse e-mail</Label>
+                    <div className="relative">
+                      <Mail className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
+                      <Input
+                        id="login-email"
+                        type="email"
+                        placeholder="directeur@radio.fm"
+                        value={loginData.email}
+                        onChange={(e) => setLoginData(prev => ({ ...prev, email: e.target.value }))}
+                        className="pl-10"
+                        required
+                      />
+                    </div>
+                  </div>
+                  
+                  <div className="space-y-2">
+                    <Label htmlFor="login-password" className="text-sm">Mot de passe</Label>
+                    <div className="relative">
+                      <Lock className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
+                      <Input
+                        id="login-password"
+                        type={showPassword ? "text" : "password"}
+                        placeholder="••••••••"
+                        value={loginData.password}
+                        onChange={(e) => setLoginData(prev => ({ ...prev, password: e.target.value }))}
+                        className="pl-10 pr-10"
+                        required
+                      />
+                      <Button
+                        type="button"
+                        variant="ghost"
+                        size="sm"
+                        className="absolute right-0 top-0 h-full px-3 py-2 hover:bg-transparent"
+                        onClick={() => setShowPassword(!showPassword)}
+                      >
+                        {showPassword ? (
+                          <EyeOff className="h-4 w-4 text-muted-foreground" />
+                        ) : (
+                          <Eye className="h-4 w-4 text-muted-foreground" />
+                        )}
+                      </Button>
+                    </div>
+                  </div>
+
+                  <Button 
+                    type="submit" 
+                    className="w-full bg-gradient-to-r from-primary to-accent hover:from-primary/90 hover:to-accent/90"
+                    disabled={isLoggingIn}
                   >
-                    {showPassword ? (
-                      <EyeOff className="h-4 w-4 text-muted-foreground" />
+                    {isLoggingIn ? (
+                      <div className="flex items-center space-x-2">
+                        <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white"></div>
+                        <span>Connexion...</span>
+                      </div>
                     ) : (
-                      <Eye className="h-4 w-4 text-muted-foreground" />
+                      'Se connecter'
                     )}
                   </Button>
-                </div>
-              </div>
+                </form>
+              </TabsContent>
 
-              <Button 
-                type="submit" 
-                className="w-full bg-gradient-to-r from-primary to-accent hover:from-primary/90 hover:to-accent/90 text-white font-semibold py-2 px-4 rounded-lg transition-all duration-300 transform hover:scale-105"
-                disabled={isLoggingIn}
-              >
-                {isLoggingIn ? (
-                  <div className="flex items-center space-x-2">
-                    <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white"></div>
-                    <span>Connexion...</span>
+              <TabsContent value="register" className="space-y-4">
+                <form onSubmit={handleRegister} className="space-y-4">
+                  <div className="space-y-2">
+                    <Label htmlFor="register-name" className="text-sm">Nom complet</Label>
+                    <div className="relative">
+                      <User className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
+                      <Input
+                        id="register-name"
+                        type="text"
+                        placeholder="Jean Dupont"
+                        value={registerData.name}
+                        onChange={(e) => setRegisterData(prev => ({ ...prev, name: e.target.value }))}
+                        className="pl-10"
+                        required
+                      />
+                    </div>
                   </div>
-                ) : (
-                  'Se connecter'
-                )}
-              </Button>
-            </form>
-            
-            <div className="mt-4 sm:mt-6 p-3 sm:p-4 bg-muted/50 rounded-lg">
-              <p className="text-xs sm:text-sm text-muted-foreground mb-2">Compte de démonstration :</p>
-              <p className="text-xs font-mono">Email : demo@radio.fm</p>
-              <p className="text-xs font-mono">Mot de passe : demo123</p>
-            </div>
+
+                  <div className="space-y-2">
+                    <Label htmlFor="register-email" className="text-sm">Adresse e-mail</Label>
+                    <div className="relative">
+                      <Mail className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
+                      <Input
+                        id="register-email"
+                        type="email"
+                        placeholder="directeur@radio.fm"
+                        value={registerData.email}
+                        onChange={(e) => setRegisterData(prev => ({ ...prev, email: e.target.value }))}
+                        className="pl-10"
+                        required
+                      />
+                    </div>
+                  </div>
+                  
+                  <div className="space-y-2">
+                    <Label htmlFor="register-password" className="text-sm">Mot de passe</Label>
+                    <div className="relative">
+                      <Lock className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
+                      <Input
+                        id="register-password"
+                        type={showRegisterPassword ? "text" : "password"}
+                        placeholder="••••••••"
+                        value={registerData.password}
+                        onChange={(e) => setRegisterData(prev => ({ ...prev, password: e.target.value }))}
+                        className="pl-10 pr-10"
+                        required
+                      />
+                      <Button
+                        type="button"
+                        variant="ghost"
+                        size="sm"
+                        className="absolute right-0 top-0 h-full px-3 py-2 hover:bg-transparent"
+                        onClick={() => setShowRegisterPassword(!showRegisterPassword)}
+                      >
+                        {showRegisterPassword ? (
+                          <EyeOff className="h-4 w-4 text-muted-foreground" />
+                        ) : (
+                          <Eye className="h-4 w-4 text-muted-foreground" />
+                        )}
+                      </Button>
+                    </div>
+                    <p className="text-xs text-muted-foreground">Minimum 6 caractères</p>
+                  </div>
+
+                  <Button 
+                    type="submit" 
+                    className="w-full bg-gradient-to-r from-primary to-accent hover:from-primary/90 hover:to-accent/90"
+                    disabled={isRegistering}
+                  >
+                    {isRegistering ? (
+                      <div className="flex items-center space-x-2">
+                        <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white"></div>
+                        <span>Création...</span>
+                      </div>
+                    ) : (
+                      'Créer mon compte'
+                    )}
+                  </Button>
+                </form>
+              </TabsContent>
+            </Tabs>
           </CardContent>
         </Card>
 

@@ -4,36 +4,26 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { User, Upload, X } from 'lucide-react';
+import { User, X, Image } from 'lucide-react';
 import { Animateur } from '@/types/animateur';
-import { animateursService, uploadService } from '@/services/firebaseService';
+import { animateursService } from '@/services/firebaseService';
 import { toast } from 'sonner';
 
 interface AnimateurFormProps {
   onAnimateurCreated: (animateur: Animateur) => void;
   onClose: () => void;
+  animateur?: Animateur;
+  isEditing?: boolean;
 }
 
-const AnimateurForm = ({ onAnimateurCreated, onClose }: AnimateurFormProps) => {
+const AnimateurForm = ({ onAnimateurCreated, onClose, animateur, isEditing = false }: AnimateurFormProps) => {
   const [isLoading, setIsLoading] = useState(false);
-  const [imageFile, setImageFile] = useState<File | null>(null);
   const [formData, setFormData] = useState({
-    nom: '',
-    postnom: '',
-    fonction: '',
-    photoUrl: ''
+    nom: animateur?.nom || '',
+    postnom: animateur?.postnom || '',
+    fonction: animateur?.fonction || '',
+    photoUrl: animateur?.photoUrl || ''
   });
-
-  const handleImageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (file) {
-      if (file.size > 5 * 1024 * 1024) {
-        toast.error('L\'image ne doit pas dépasser 5MB');
-        return;
-      }
-      setImageFile(file);
-    }
-  };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -46,33 +36,34 @@ const AnimateurForm = ({ onAnimateurCreated, onClose }: AnimateurFormProps) => {
     setIsLoading(true);
     
     try {
-      let photoUrl = formData.photoUrl;
-      
-      if (imageFile) {
-        photoUrl = await uploadService.uploadImage(imageFile, 'animateurs');
+      if (isEditing && animateur) {
+        await animateursService.update(animateur.id, {
+          ...formData,
+          date_modification: new Date().toISOString()
+        });
+        toast.success('Animateur modifié avec succès !');
+      } else {
+        const animateurId = await animateursService.create({
+          ...formData,
+          date_creation: new Date().toISOString(),
+          date_modification: new Date().toISOString()
+        });
+
+        const newAnimateur: Animateur = {
+          id: animateurId,
+          ...formData,
+          date_creation: new Date().toISOString(),
+          date_modification: new Date().toISOString()
+        };
+
+        onAnimateurCreated(newAnimateur);
+        toast.success('Animateur créé avec succès !');
       }
-
-      const animateurId = await animateursService.create({
-        ...formData,
-        photoUrl,
-        date_creation: new Date().toISOString(),
-        date_modification: new Date().toISOString()
-      });
-
-      const newAnimateur: Animateur = {
-        id: animateurId,
-        ...formData,
-        photoUrl,
-        date_creation: new Date().toISOString(),
-        date_modification: new Date().toISOString()
-      };
-
-      onAnimateurCreated(newAnimateur);
-      toast.success('Animateur créé avec succès !');
+      
       onClose();
     } catch (error) {
-      console.error('Erreur lors de la création de l\'animateur:', error);
-      toast.error('Erreur lors de la création de l\'animateur');
+      console.error('Erreur lors de l\'opération:', error);
+      toast.error('Erreur lors de l\'opération');
     } finally {
       setIsLoading(false);
     }
@@ -84,7 +75,7 @@ const AnimateurForm = ({ onAnimateurCreated, onClose }: AnimateurFormProps) => {
         <div className="flex items-center justify-between">
           <CardTitle className="flex items-center space-x-2">
             <User className="h-5 w-5" />
-            <span>Nouvel Animateur</span>
+            <span>{isEditing ? 'Modifier Animateur' : 'Nouvel Animateur'}</span>
           </CardTitle>
           <Button
             variant="ghost"
@@ -132,21 +123,30 @@ const AnimateurForm = ({ onAnimateurCreated, onClose }: AnimateurFormProps) => {
           </div>
 
           <div className="space-y-2">
-            <Label htmlFor="photo">Photo de profil</Label>
+            <Label htmlFor="photoUrl">URL de la photo (optionnel)</Label>
             <div className="flex items-center space-x-2">
+              <Image className="h-4 w-4 text-muted-foreground flex-shrink-0" />
               <Input
-                id="photo"
-                type="file"
-                accept="image/*"
-                onChange={handleImageChange}
+                id="photoUrl"
+                type="url"
+                value={formData.photoUrl}
+                onChange={(e) => setFormData(prev => ({ ...prev, photoUrl: e.target.value }))}
+                placeholder="https://example.com/photo.jpg"
                 className="flex-1"
               />
-              <Upload className="h-4 w-4 text-muted-foreground" />
             </div>
-            {imageFile && (
-              <p className="text-xs text-muted-foreground">
-                {imageFile.name} ({(imageFile.size / 1024 / 1024).toFixed(2)} MB)
-              </p>
+            {formData.photoUrl && (
+              <div className="mt-2">
+                <img
+                  src={formData.photoUrl}
+                  alt="Aperçu"
+                  className="w-16 h-16 rounded-full object-cover"
+                  onError={(e) => {
+                    e.currentTarget.style.display = 'none';
+                    toast.error('URL de l\'image invalide');
+                  }}
+                />
+              </div>
             )}
           </div>
 
@@ -159,10 +159,10 @@ const AnimateurForm = ({ onAnimateurCreated, onClose }: AnimateurFormProps) => {
               {isLoading ? (
                 <div className="flex items-center space-x-2">
                   <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white"></div>
-                  <span>Création...</span>
+                  <span>{isEditing ? 'Modification...' : 'Création...'}</span>
                 </div>
               ) : (
-                'Créer'
+                isEditing ? 'Modifier' : 'Créer'
               )}
             </Button>
             <Button

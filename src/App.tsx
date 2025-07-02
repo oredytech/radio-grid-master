@@ -9,6 +9,7 @@ import Dashboard from "./pages/Dashboard";
 import Schedule from "./pages/Schedule";
 import Programs from "./pages/Programs";
 import AddProgram from "./pages/AddProgram";
+import Animateurs from "./pages/Animateurs";
 import NotFound from "./pages/NotFound";
 import { AuthProvider } from "./contexts/AuthContext";
 
@@ -27,6 +28,7 @@ const App = () => (
             <Route path="/schedule" element={<Schedule />} />
             <Route path="/programs" element={<Programs />} />
             <Route path="/programs/add" element={<AddProgram />} />
+            <Route path="/animateurs" element={<Animateurs />} />
             <Route path="*" element={<NotFound />} />
           </Routes>
         </BrowserRouter>
