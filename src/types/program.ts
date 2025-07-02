@@ -14,6 +14,16 @@ export interface Program {
   statut: 'En cours' | 'Terminé' | 'À venir';
 }
 
+export const CATEGORIES = [
+  'Magazine',
+  'Musique', 
+  'Sport',
+  'Actualité',
+  'Culture',
+  'Religion',
+  'Divertissement'
+] as const;
+
 export const CATEGORIES_COLORS = {
   'Magazine': 'from-blue-500 to-blue-600',
   'Musique': 'from-purple-500 to-purple-600',

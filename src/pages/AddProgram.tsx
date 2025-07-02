@@ -24,15 +24,15 @@ const AddProgram = () => {
   const [formData, setFormData] = useState({
     nom: '',
     description: '',
-    jour: '',
+    jour: '' as Program['jour'] | '',
     heure_debut: '',
     heure_fin: '',
-    categorie: '',
+    categorie: '' as Program['categorie'] | '',
     animateurs: [] as string[],
     imageUrl: ''
   });
 
-  const jours = ['Lundi', 'Mardi', 'Mercredi', 'Jeudi', 'Vendredi', 'Samedi', 'Dimanche'];
+  const jours: Program['jour'][] = ['Lundi', 'Mardi', 'Mercredi', 'Jeudi', 'Vendredi', 'Samedi', 'Dimanche'];
 
   useEffect(() => {
     loadAnimateurs();
@@ -84,12 +84,13 @@ const AddProgram = () => {
       await programsService.create({
         nom: formData.nom,
         description: formData.description,
-        jour: formData.jour,
+        jour: formData.jour as Program['jour'],
         heure_debut: formData.heure_debut,
         heure_fin: formData.heure_fin,
-        categorie: formData.categorie,
+        categorie: formData.categorie as Program['categorie'],
         animateurs: formData.animateurs,
         imageUrl: formData.imageUrl,
+        statut: 'En cours',
         date_creation: new Date().toISOString(),
         date_modification: new Date().toISOString()
       });
@@ -153,7 +154,7 @@ const AddProgram = () => {
 
                 <div className="space-y-2">
                   <Label htmlFor="categorie">Catégorie *</Label>
-                  <Select value={formData.categorie} onValueChange={(value) => setFormData(prev => ({ ...prev, categorie: value }))}>
+                  <Select value={formData.categorie} onValueChange={(value) => setFormData(prev => ({ ...prev, categorie: value as Program['categorie'] }))}>
                     <SelectTrigger>
                       <SelectValue placeholder="Sélectionner une catégorie" />
                     </SelectTrigger>
@@ -183,7 +184,7 @@ const AddProgram = () => {
               <div className="grid grid-cols-1 md:grid-cols-3 gap-4 sm:gap-6">
                 <div className="space-y-2">
                   <Label htmlFor="jour">Jour *</Label>
-                  <Select value={formData.jour} onValueChange={(value) => setFormData(prev => ({ ...prev, jour: value }))}>
+                  <Select value={formData.jour} onValueChange={(value) => setFormData(prev => ({ ...prev, jour: value as Program['jour'] }))}>
                     <SelectTrigger>
                       <SelectValue placeholder="Sélectionner un jour" />
                     </SelectTrigger>
