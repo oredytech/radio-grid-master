@@ -12,6 +12,7 @@ export interface Program {
   date_creation: string;
   date_modification: string;
   statut: 'En cours' | 'Terminé' | 'À venir';
+  userId?: string; // Ajout de l'ID utilisateur
 }
 
 export const CATEGORIES = [

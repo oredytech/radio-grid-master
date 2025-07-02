@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from 'react';
 import { Navigate, useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
@@ -35,12 +34,16 @@ const AddProgram = () => {
   const jours: Program['jour'][] = ['Lundi', 'Mardi', 'Mercredi', 'Jeudi', 'Vendredi', 'Samedi', 'Dimanche'];
 
   useEffect(() => {
-    loadAnimateurs();
-  }, []);
+    if (user) {
+      loadAnimateurs();
+    }
+  }, [user]);
 
   const loadAnimateurs = async () => {
+    if (!user) return;
+    
     try {
-      const animateursData = await animateursService.getAll();
+      const animateursData = await animateursService.getAll(user.id);
       setAnimateurs(animateursData);
     } catch (error) {
       console.error('Erreur lors du chargement des animateurs:', error);
@@ -93,7 +96,7 @@ const AddProgram = () => {
         statut: 'En cours',
         date_creation: new Date().toISOString(),
         date_modification: new Date().toISOString()
-      });
+      }, user.id);
 
       toast.success('Programme créé avec succès !');
       navigate('/programs');

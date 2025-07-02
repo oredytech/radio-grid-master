@@ -8,6 +8,7 @@ import {
   getDocs, 
   query, 
   orderBy,
+  where,
   Timestamp 
 } from 'firebase/firestore';
 import { ref, uploadBytes, getDownloadURL } from 'firebase/storage';
@@ -15,24 +16,24 @@ import { db, storage } from '@/config/firebase';
 import { Program } from '@/types/program';
 import { Animateur } from '@/types/animateur';
 
-// Collections
-const PROGRAMS_COLLECTION = 'programmes';
-const ANIMATEURS_COLLECTION = 'animateurs';
-const USERS_COLLECTION = 'utilisateurs';
-
-// Programs Service
+// Programs Service avec isolation par utilisateur
 export const programsService = {
-  async create(program: Omit<Program, 'id'>) {
-    const docRef = await addDoc(collection(db, PROGRAMS_COLLECTION), {
+  async create(program: Omit<Program, 'id'>, userId: string) {
+    const docRef = await addDoc(collection(db, 'programmes'), {
       ...program,
+      userId, // Ajout de l'ID utilisateur
       date_creation: Timestamp.now(),
       date_modification: Timestamp.now()
     });
     return docRef.id;
   },
 
-  async getAll() {
-    const q = query(collection(db, PROGRAMS_COLLECTION), orderBy('date_creation', 'desc'));
+  async getAll(userId: string) {
+    const q = query(
+      collection(db, 'programmes'), 
+      where('userId', '==', userId),
+      orderBy('date_creation', 'desc')
+    );
     const querySnapshot = await getDocs(q);
     return querySnapshot.docs.map(doc => ({
       id: doc.id,
@@ -43,7 +44,7 @@ export const programsService = {
   },
 
   async update(id: string, program: Partial<Program>) {
-    const docRef = doc(db, PROGRAMS_COLLECTION, id);
+    const docRef = doc(db, 'programmes', id);
     await updateDoc(docRef, {
       ...program,
       date_modification: Timestamp.now()
@@ -51,24 +52,29 @@ export const programsService = {
   },
 
   async delete(id: string) {
-    const docRef = doc(db, PROGRAMS_COLLECTION, id);
+    const docRef = doc(db, 'programmes', id);
     await deleteDoc(docRef);
   }
 };
 
-// Animateurs Service
+// Animateurs Service avec isolation par utilisateur
 export const animateursService = {
-  async create(animateur: Omit<Animateur, 'id'>) {
-    const docRef = await addDoc(collection(db, ANIMATEURS_COLLECTION), {
+  async create(animateur: Omit<Animateur, 'id'>, userId: string) {
+    const docRef = await addDoc(collection(db, 'animateurs'), {
       ...animateur,
+      userId, // Ajout de l'ID utilisateur
       date_creation: Timestamp.now(),
       date_modification: Timestamp.now()
     });
     return docRef.id;
   },
 
-  async getAll() {
-    const q = query(collection(db, ANIMATEURS_COLLECTION), orderBy('nom', 'asc'));
+  async getAll(userId: string) {
+    const q = query(
+      collection(db, 'animateurs'), 
+      where('userId', '==', userId),
+      orderBy('nom', 'asc')
+    );
     const querySnapshot = await getDocs(q);
     return querySnapshot.docs.map(doc => ({
       id: doc.id,
@@ -79,7 +85,7 @@ export const animateursService = {
   },
 
   async update(id: string, animateur: Partial<Animateur>) {
-    const docRef = doc(db, ANIMATEURS_COLLECTION, id);
+    const docRef = doc(db, 'animateurs', id);
     await updateDoc(docRef, {
       ...animateur,
       date_modification: Timestamp.now()
@@ -87,7 +93,7 @@ export const animateursService = {
   },
 
   async delete(id: string) {
-    const docRef = doc(db, ANIMATEURS_COLLECTION, id);
+    const docRef = doc(db, 'animateurs', id);
     await deleteDoc(docRef);
   }
 };

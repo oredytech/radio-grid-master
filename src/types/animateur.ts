@@ -7,4 +7,5 @@ export interface Animateur {
   photoUrl?: string;
   date_creation: string;
   date_modification: string;
+  userId?: string; // Ajout de l'ID utilisateur
 }

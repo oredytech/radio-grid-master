@@ -8,7 +8,7 @@ import { useAuth } from '@/contexts/AuthContext';
 import Navigation from '@/components/Navigation';
 import ProgramCard from '@/components/ProgramCard';
 import { Program } from '@/types/program';
-import { programsService } from '@/services/firebaseService';
+import { programsService, animateursService } from '@/services/firebaseService';
 import { getCurrentTime, getCurrentDay, isCurrentProgram } from '@/utils/timeUtils';
 import { toast } from 'sonner';
 
@@ -17,6 +17,7 @@ const Dashboard = () => {
   const [currentTime, setCurrentTime] = useState(getCurrentTime());
   const [currentDay, setCurrentDay] = useState(getCurrentDay());
   const [programs, setPrograms] = useState<Program[]>([]);
+  const [animateursCount, setAnimateursCount] = useState(0);
   const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
@@ -29,17 +30,25 @@ const Dashboard = () => {
   }, []);
 
   useEffect(() => {
-    loadPrograms();
-  }, []);
+    if (user) {
+      loadData();
+    }
+  }, [user]);
 
-  const loadPrograms = async () => {
+  const loadData = async () => {
+    if (!user) return;
+    
     try {
       setIsLoading(true);
-      const programsData = await programsService.getAll();
+      const [programsData, animateursData] = await Promise.all([
+        programsService.getAll(user.id),
+        animateursService.getAll(user.id)
+      ]);
       setPrograms(programsData);
+      setAnimateursCount(animateursData.length);
     } catch (error) {
-      console.error('Erreur lors du chargement des programmes:', error);
-      toast.error('Erreur lors du chargement des programmes');
+      console.error('Erreur lors du chargement des données:', error);
+      toast.error('Erreur lors du chargement des données');
     } finally {
       setIsLoading(false);
     }
@@ -56,6 +65,16 @@ const Dashboard = () => {
   const todayPrograms = programs.filter(program => program.jour === currentDay);
   const upcomingPrograms = programs.slice(0, 3);
 
+  // Calcul des vraies statistiques
+  const totalHours = programs.reduce((total, program) => {
+    const [startHour, startMin] = program.heure_debut.split(':').map(Number);
+    const [endHour, endMin] = program.heure_fin.split(':').map(Number);
+    const duration = (endHour * 60 + endMin) - (startHour * 60 + startMin);
+    return total + duration;
+  }, 0);
+
+  const fillRate = Math.round((totalHours / (7 * 24 * 60)) * 100);
+
   const stats = [
     {
       title: "Programmes Actifs",
@@ -65,19 +84,19 @@ const Dashboard = () => {
     },
     {
       title: "Heures de Diffusion",
-      value: "168h",
+      value: `${Math.round(totalHours / 60)}h`,
       icon: Clock,
       color: "text-green-500"
     },
     {
       title: "Animateurs",
-      value: "12",
+      value: animateursCount,
       icon: Users,
       color: "text-purple-500"
     },
     {
       title: "Taux de Remplissage",
-      value: "85%",
+      value: `${fillRate}%`,
       icon: TrendingUp,
       color: "text-orange-500"
     }

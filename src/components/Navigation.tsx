@@ -43,52 +43,76 @@ const Navigation = () => {
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="flex justify-between items-center h-16">
           {/* Logo */}
-          <Link to="/dashboard" className="flex items-center space-x-2 flex-shrink-0">
-            <div className="relative">
-              <Radio className="h-8 w-8 text-primary" />
+          <Link to="/dashboard" className="flex items-center space-x-2 flex-shrink-0 min-w-0">
+            <div className="relative flex-shrink-0">
+              <Radio className="h-6 w-6 sm:h-8 sm:w-8 text-primary" />
               <div className="absolute -top-1 -right-1 h-2 w-2 bg-red-500 rounded-full animate-pulse"></div>
             </div>
-            <span className="text-xl font-bold bg-gradient-to-r from-primary to-accent bg-clip-text text-transparent hidden sm:block">
+            <span className="text-sm sm:text-lg lg:text-xl font-bold bg-gradient-to-r from-primary to-accent bg-clip-text text-transparent hidden xs:block truncate">
               RADIO PROGRAMMER
             </span>
           </Link>
 
           {/* Desktop Navigation */}
-          <div className="hidden md:flex items-center space-x-1">
+          <div className="hidden lg:flex items-center space-x-1">
             {navItems.map((item) => {
               const Icon = item.icon;
               return (
                 <Link
                   key={item.path}
                   to={item.path}
-                  className={`flex items-center space-x-2 px-3 py-2 rounded-lg text-sm font-medium transition-colors ${
+                  className={`flex items-center space-x-2 px-3 py-2 rounded-lg text-sm font-medium transition-colors whitespace-nowrap ${
                     isActive(item.path)
                       ? 'bg-primary text-primary-foreground'
                       : 'text-muted-foreground hover:text-foreground hover:bg-accent'
                   }`}
                 >
-                  <Icon className="h-4 w-4" />
+                  <Icon className="h-4 w-4 flex-shrink-0" />
                   <span>{item.label}</span>
                 </Link>
               );
             })}
           </div>
 
+          {/* Medium screens navigation */}
+          <div className="hidden md:flex lg:hidden items-center space-x-1">
+            {navItems.map((item) => {
+              const Icon = item.icon;
+              return (
+                <Link
+                  key={item.path}
+                  to={item.path}
+                  className={`flex items-center justify-center p-2 rounded-lg text-sm font-medium transition-colors ${
+                    isActive(item.path)
+                      ? 'bg-primary text-primary-foreground'
+                      : 'text-muted-foreground hover:text-foreground hover:bg-accent'
+                  }`}
+                  title={item.label}
+                >
+                  <Icon className="h-4 w-4" />
+                </Link>
+              );
+            })}
+          </div>
+
           {/* User Menu */}
-          <div className="flex items-center space-x-4">
-            <div className="hidden sm:flex items-center space-x-2 text-sm text-muted-foreground">
-              <span>Bonjour,</span>
-              <span className="font-medium text-foreground">{user?.name}</span>
+          <div className="flex items-center space-x-2 sm:space-x-4 min-w-0">
+            <div className="hidden sm:flex items-center space-x-2 text-xs sm:text-sm text-muted-foreground min-w-0">
+              <span className="hidden md:inline">Bonjour,</span>
+              <span className="font-medium text-foreground truncate max-w-[100px] lg:max-w-none">
+                {user?.name}
+              </span>
             </div>
             
             <Button
               variant="outline"
               size="sm"
               onClick={handleLogout}
-              className="hidden sm:flex"
+              className="hidden sm:flex text-xs sm:text-sm px-2 sm:px-3"
             >
-              <LogOut className="h-4 w-4 mr-2" />
-              Déconnexion
+              <LogOut className="h-3 w-3 sm:h-4 sm:w-4 mr-1 sm:mr-2" />
+              <span className="hidden md:inline">Déconnexion</span>
+              <span className="md:hidden">Exit</span>
             </Button>
 
             {/* Mobile menu button */}
@@ -96,7 +120,7 @@ const Navigation = () => {
               variant="outline"
               size="sm"
               onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
-              className="md:hidden"
+              className="md:hidden p-2"
             >
               {isMobileMenuOpen ? (
                 <X className="h-4 w-4" />
@@ -118,13 +142,13 @@ const Navigation = () => {
                     key={item.path}
                     to={item.path}
                     onClick={() => setIsMobileMenuOpen(false)}
-                    className={`flex items-center space-x-3 px-3 py-2 rounded-lg text-sm font-medium transition-colors ${
+                    className={`flex items-center space-x-3 px-3 py-3 rounded-lg text-sm font-medium transition-colors ${
                       isActive(item.path)
                         ? 'bg-primary text-primary-foreground'
                         : 'text-muted-foreground hover:text-foreground hover:bg-accent'
                     }`}
                   >
-                    <Icon className="h-4 w-4" />
+                    <Icon className="h-4 w-4 flex-shrink-0" />
                     <span>{item.label}</span>
                   </Link>
                 );
@@ -137,7 +161,10 @@ const Navigation = () => {
                 <Button
                   variant="outline"
                   size="sm"
-                  onClick={handleLogout}
+                  onClick={() => {
+                    handleLogout();
+                    setIsMobileMenuOpen(false);
+                  }}
                   className="w-full justify-start mt-2"
                 >
                   <LogOut className="h-4 w-4 mr-2" />
