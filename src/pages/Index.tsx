@@ -48,20 +48,20 @@ const Index = () => {
 
   return (
     <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-background via-background to-card p-4">
-      <div className="w-full max-w-md space-y-8">
+      <div className="w-full max-w-md space-y-6 sm:space-y-8">
         {/* Header */}
         <div className="text-center space-y-4">
           <div className="flex justify-center">
             <div className="relative">
-              <Radio className="h-16 w-16 text-primary animate-pulse" />
-              <div className="absolute -top-1 -right-1 h-4 w-4 bg-red-500 rounded-full animate-pulse"></div>
+              <Radio className="h-12 w-12 sm:h-16 sm:w-16 text-primary animate-pulse" />
+              <div className="absolute -top-1 -right-1 h-3 w-3 sm:h-4 sm:w-4 bg-red-500 rounded-full animate-pulse"></div>
             </div>
           </div>
           <div>
-            <h1 className="text-4xl font-bold bg-gradient-to-r from-primary to-accent bg-clip-text text-transparent">
+            <h1 className="text-2xl sm:text-4xl font-bold bg-gradient-to-r from-primary to-accent bg-clip-text text-transparent">
               RADIO PROGRAMMER
             </h1>
-            <p className="text-lg text-muted-foreground mt-2">
+            <p className="text-base sm:text-lg text-muted-foreground mt-2">
               Gestion professionnelle de grille radio
             </p>
           </div>
@@ -69,16 +69,16 @@ const Index = () => {
 
         {/* Login Form */}
         <Card className="backdrop-blur-sm bg-card/50 border-border/50">
-          <CardHeader className="space-y-1">
-            <CardTitle className="text-2xl font-bold text-center">Connexion</CardTitle>
-            <CardDescription className="text-center">
+          <CardHeader className="space-y-1 px-4 sm:px-6">
+            <CardTitle className="text-xl sm:text-2xl font-bold text-center">Connexion</CardTitle>
+            <CardDescription className="text-center text-sm sm:text-base">
               Accédez à votre espace de programmation
             </CardDescription>
           </CardHeader>
-          <CardContent>
+          <CardContent className="px-4 sm:px-6">
             <form onSubmit={handleLogin} className="space-y-4">
               <div className="space-y-2">
-                <Label htmlFor="email">Adresse e-mail</Label>
+                <Label htmlFor="email" className="text-sm">Adresse e-mail</Label>
                 <div className="relative">
                   <Mail className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
                   <Input
@@ -94,7 +94,7 @@ const Index = () => {
               </div>
               
               <div className="space-y-2">
-                <Label htmlFor="password">Mot de passe</Label>
+                <Label htmlFor="password" className="text-sm">Mot de passe</Label>
                 <div className="relative">
                   <Lock className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
                   <Input
@@ -138,8 +138,8 @@ const Index = () => {
               </Button>
             </form>
             
-            <div className="mt-6 p-4 bg-muted/50 rounded-lg">
-              <p className="text-sm text-muted-foreground mb-2">Compte de démonstration :</p>
+            <div className="mt-4 sm:mt-6 p-3 sm:p-4 bg-muted/50 rounded-lg">
+              <p className="text-xs sm:text-sm text-muted-foreground mb-2">Compte de démonstration :</p>
               <p className="text-xs font-mono">Email : demo@radio.fm</p>
               <p className="text-xs font-mono">Mot de passe : demo123</p>
             </div>
@@ -147,8 +147,21 @@ const Index = () => {
         </Card>
 
         {/* Footer */}
-        <div className="text-center text-sm text-muted-foreground">
-          <p>© 2024 Radio Programmer - Solution professionnelle</p>
+        <div className="space-y-3">
+          <div className="text-center text-xs sm:text-sm text-muted-foreground">
+            <p>© 2024 Radio Programmer - Solution professionnelle</p>
+          </div>
+          <div className="text-center text-xs text-muted-foreground">
+            Fièrement conçu par{' '}
+            <a 
+              href="https://oredytech.com" 
+              target="_blank" 
+              rel="noopener noreferrer"
+              className="font-semibold text-primary hover:text-accent transition-colors"
+            >
+              Oredy TECHNOLOGIES
+            </a>
+          </div>
         </div>
       </div>
     </div>
