@@ -1,5 +1,5 @@
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Navigate, useNavigate } from 'react-router-dom';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -8,8 +8,8 @@ import { Badge } from '@/components/ui/badge';
 import { Plus, Search, Filter, Edit, Trash2, Users, Clock } from 'lucide-react';
 import { useAuth } from '@/contexts/AuthContext';
 import Navigation from '@/components/Navigation';
-import { mockPrograms } from '@/data/mockPrograms';
 import { Program, CATEGORIES_COLORS } from '@/types/program';
+import { programsService } from '@/services/firebaseService';
 import { formatDuration } from '@/utils/timeUtils';
 import { toast } from 'sonner';
 
@@ -18,7 +18,25 @@ const Programs = () => {
   const navigate = useNavigate();
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedCategory, setSelectedCategory] = useState<string>('');
-  const [programs] = useState<Program[]>(mockPrograms);
+  const [programs, setPrograms] = useState<Program[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
+
+  useEffect(() => {
+    loadPrograms();
+  }, []);
+
+  const loadPrograms = async () => {
+    try {
+      setIsLoading(true);
+      const programsData = await programsService.getAll();
+      setPrograms(programsData);
+    } catch (error) {
+      console.error('Erreur lors du chargement des programmes:', error);
+      toast.error('Erreur lors du chargement des programmes');
+    } finally {
+      setIsLoading(false);
+    }
+  };
 
   if (!user) {
     return <Navigate to="/" replace />;
@@ -38,14 +56,31 @@ const Programs = () => {
     toast.info('Fonctionnalité d\'édition en cours de développement');
   };
 
-  const handleDelete = (programId: string) => {
-    console.log('Delete program:', programId);
-    toast.info('Fonctionnalité de suppression en cours de développement');
+  const handleDelete = async (programId: string) => {
+    try {
+      await programsService.delete(programId);
+      setPrograms(prev => prev.filter(p => p.id !== programId));
+      toast.success('Programme supprimé avec succès');
+    } catch (error) {
+      console.error('Erreur lors de la suppression:', error);
+      toast.error('Erreur lors de la suppression du programme');
+    }
   };
 
   const handleAddProgram = () => {
     navigate('/programs/add');
   };
+
+  if (isLoading) {
+    return (
+      <div className="min-h-screen bg-background">
+        <Navigation />
+        <div className="flex items-center justify-center min-h-[50vh]">
+          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen bg-background">
@@ -55,15 +90,15 @@ const Programs = () => {
         {/* Header */}
         <div className="mb-6 sm:mb-8">
           <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
-            <div>
-              <h1 className="text-2xl sm:text-3xl font-bold text-foreground">Gestion des Programmes</h1>
+            <div className="min-w-0">
+              <h1 className="text-2xl sm:text-3xl font-bold text-foreground truncate">Gestion des Programmes</h1>
               <p className="text-muted-foreground mt-1 text-sm sm:text-base">
                 Créez, modifiez et organisez vos émissions
               </p>
             </div>
             <Button 
               onClick={handleAddProgram}
-              className="bg-gradient-to-r from-primary to-accent hover:from-primary/90 hover:to-accent/90 self-start sm:self-auto"
+              className="bg-gradient-to-r from-primary to-accent hover:from-primary/90 hover:to-accent/90 self-start sm:self-auto flex-shrink-0"
             >
               <Plus className="h-4 w-4 mr-2" />
               <span className="hidden sm:inline">Nouveau Programme</span>
@@ -93,11 +128,12 @@ const Programs = () => {
                   />
                 </div>
               </div>
-              <div className="flex flex-wrap gap-2">
+              <div className="flex flex-wrap gap-2 overflow-x-auto pb-2">
                 <Button
                   variant={!selectedCategory ? "default" : "outline"}
                   size="sm"
                   onClick={() => setSelectedCategory('')}
+                  className="flex-shrink-0"
                 >
                   Toutes
                 </Button>
@@ -107,7 +143,7 @@ const Programs = () => {
                     variant={selectedCategory === category ? "default" : "outline"}
                     size="sm"
                     onClick={() => setSelectedCategory(category)}
-                    className="text-xs sm:text-sm"
+                    className="text-xs sm:text-sm flex-shrink-0"
                   >
                     {category}
                   </Button>
@@ -210,7 +246,7 @@ const Programs = () => {
 
         {/* Footer */}
         <div className="mt-8 pt-6 border-t border-border">
-          <p className="text-center text-sm text-muted-foreground">
+          <p className="text-center text-xs sm:text-sm text-muted-foreground">
             Fièrement conçu par{' '}
             <a 
               href="https://oredytech.com" 

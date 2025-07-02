@@ -7,13 +7,17 @@ import { Radio, Clock, Calendar, Users, TrendingUp, Zap } from 'lucide-react';
 import { useAuth } from '@/contexts/AuthContext';
 import Navigation from '@/components/Navigation';
 import ProgramCard from '@/components/ProgramCard';
-import { mockPrograms } from '@/data/mockPrograms';
+import { Program } from '@/types/program';
+import { programsService } from '@/services/firebaseService';
 import { getCurrentTime, getCurrentDay, isCurrentProgram } from '@/utils/timeUtils';
+import { toast } from 'sonner';
 
 const Dashboard = () => {
   const { user } = useAuth();
   const [currentTime, setCurrentTime] = useState(getCurrentTime());
   const [currentDay, setCurrentDay] = useState(getCurrentDay());
+  const [programs, setPrograms] = useState<Program[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
     const timer = setInterval(() => {
@@ -24,21 +28,38 @@ const Dashboard = () => {
     return () => clearInterval(timer);
   }, []);
 
+  useEffect(() => {
+    loadPrograms();
+  }, []);
+
+  const loadPrograms = async () => {
+    try {
+      setIsLoading(true);
+      const programsData = await programsService.getAll();
+      setPrograms(programsData);
+    } catch (error) {
+      console.error('Erreur lors du chargement des programmes:', error);
+      toast.error('Erreur lors du chargement des programmes');
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
   if (!user) {
     return <Navigate to="/" replace />;
   }
 
-  const currentProgram = mockPrograms.find(program => 
+  const currentProgram = programs.find(program => 
     isCurrentProgram(program.heure_debut, program.heure_fin, program.jour)
   );
 
-  const todayPrograms = mockPrograms.filter(program => program.jour === currentDay);
-  const upcomingPrograms = mockPrograms.slice(0, 3);
+  const todayPrograms = programs.filter(program => program.jour === currentDay);
+  const upcomingPrograms = programs.slice(0, 3);
 
   const stats = [
     {
       title: "Programmes Actifs",
-      value: mockPrograms.length,
+      value: programs.length,
       icon: Radio,
       color: "text-blue-500"
     },
@@ -62,6 +83,17 @@ const Dashboard = () => {
     }
   ];
 
+  if (isLoading) {
+    return (
+      <div className="min-h-screen bg-background">
+        <Navigation />
+        <div className="flex items-center justify-center min-h-[50vh]">
+          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className="min-h-screen bg-background">
       <Navigation />
@@ -70,13 +102,13 @@ const Dashboard = () => {
         {/* Header */}
         <div className="mb-6 sm:mb-8">
           <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
-            <div>
-              <h1 className="text-2xl sm:text-3xl font-bold text-foreground">Dashboard</h1>
+            <div className="min-w-0">
+              <h1 className="text-2xl sm:text-3xl font-bold text-foreground truncate">Dashboard</h1>
               <p className="text-muted-foreground mt-1 text-sm sm:text-base">
                 Vue d'ensemble de votre programmation radio
               </p>
             </div>
-            <div className="text-left sm:text-right">
+            <div className="text-left sm:text-right flex-shrink-0">
               <div className="text-xl sm:text-2xl font-mono font-bold text-primary">
                 {currentTime}
               </div>
@@ -89,11 +121,11 @@ const Dashboard = () => {
 
         {/* Current Program */}
         {currentProgram && (
-          <Card className="mb-6 sm:mb-8 bg-gradient-to-r from-red-500/10 to-orange-500/10 border-red-500/20">
+          <Card className="mb-6 sm:mb-8 bg-gradient-to-r from-red-500/10 to-orange-500/10 border-red-500/20 overflow-hidden">
             <CardHeader className="pb-4">
               <div className="flex items-center space-x-2">
                 <div className="flex items-center space-x-2">
-                  <div className="h-3 w-3 bg-red-500 rounded-full animate-pulse"></div>
+                  <div className="h-3 w-3 bg-red-500 rounded-full animate-pulse flex-shrink-0"></div>
                   <Badge variant="destructive" className="animate-pulse-live text-xs sm:text-sm">
                     EN DIRECT MAINTENANT
                   </Badge>
@@ -102,16 +134,16 @@ const Dashboard = () => {
             </CardHeader>
             <CardContent>
               <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 sm:gap-6">
-                <div className="lg:col-span-2">
-                  <h2 className="text-xl sm:text-2xl font-bold mb-2">{currentProgram.nom}</h2>
-                  <p className="text-muted-foreground mb-4 text-sm sm:text-base">{currentProgram.description}</p>
+                <div className="lg:col-span-2 min-w-0">
+                  <h2 className="text-xl sm:text-2xl font-bold mb-2 truncate">{currentProgram.nom}</h2>
+                  <p className="text-muted-foreground mb-4 text-sm sm:text-base line-clamp-2">{currentProgram.description}</p>
                   <div className="flex flex-col sm:flex-row sm:items-center gap-2 sm:gap-4 text-xs sm:text-sm">
                     <div className="flex items-center space-x-1">
-                      <Clock className="h-3 w-3 sm:h-4 sm:w-4" />
+                      <Clock className="h-3 w-3 sm:h-4 sm:w-4 flex-shrink-0" />
                       <span>{currentProgram.heure_debut} - {currentProgram.heure_fin}</span>
                     </div>
-                    <div className="flex items-center space-x-1">
-                      <Users className="h-3 w-3 sm:h-4 sm:w-4" />
+                    <div className="flex items-center space-x-1 min-w-0">
+                      <Users className="h-3 w-3 sm:h-4 sm:w-4 flex-shrink-0" />
                       <span className="truncate">{currentProgram.animateurs.join(', ')}</span>
                     </div>
                   </div>
@@ -148,11 +180,11 @@ const Dashboard = () => {
 
         {/* Today's Programs & Upcoming */}
         <div className="grid grid-cols-1 xl:grid-cols-2 gap-6 sm:gap-8">
-          <Card>
+          <Card className="overflow-hidden">
             <CardHeader>
               <CardTitle className="flex items-center space-x-2 text-lg sm:text-xl">
                 <Calendar className="h-4 w-4 sm:h-5 sm:w-5" />
-                <span>Programmes du {currentDay}</span>
+                <span className="truncate">Programmes du {currentDay}</span>
               </CardTitle>
               <CardDescription className="text-xs sm:text-sm">
                 Votre grille de programmation d'aujourd'hui
@@ -173,7 +205,7 @@ const Dashboard = () => {
             </CardContent>
           </Card>
 
-          <Card>
+          <Card className="overflow-hidden">
             <CardHeader>
               <CardTitle className="flex items-center space-x-2 text-lg sm:text-xl">
                 <Clock className="h-4 w-4 sm:h-5 sm:w-5" />
@@ -195,7 +227,7 @@ const Dashboard = () => {
 
         {/* Footer */}
         <div className="mt-8 pt-6 border-t border-border">
-          <p className="text-center text-sm text-muted-foreground">
+          <p className="text-center text-xs sm:text-sm text-muted-foreground">
             Fièrement conçu par{' '}
             <a 
               href="https://oredytech.com" 

@@ -1,5 +1,5 @@
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Navigate, useNavigate } from 'react-router-dom';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -8,16 +8,22 @@ import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Badge } from '@/components/ui/badge';
-import { Plus, X, ArrowLeft, Save } from 'lucide-react';
+import { Dialog, DialogContent } from '@/components/ui/dialog';
+import { Plus, X, ArrowLeft, Save, User } from 'lucide-react';
 import { useAuth } from '@/contexts/AuthContext';
 import Navigation from '@/components/Navigation';
+import AnimateurForm from '@/components/AnimateurForm';
 import { Program } from '@/types/program';
+import { Animateur } from '@/types/animateur';
+import { programsService, animateursService } from '@/services/firebaseService';
 import { toast } from 'sonner';
 
 const AddProgram = () => {
   const { user } = useAuth();
   const navigate = useNavigate();
   const [isLoading, setIsLoading] = useState(false);
+  const [showAnimateurForm, setShowAnimateurForm] = useState(false);
+  const [animateurs, setAnimateurs] = useState<Animateur[]>([]);
   
   const [formData, setFormData] = useState({
     nom: '',
@@ -29,31 +35,55 @@ const AddProgram = () => {
     animateurs: [] as string[],
     imageUrl: ''
   });
-  
-  const [newAnimateur, setNewAnimateur] = useState('');
+
+  const jours = ['Lundi', 'Mardi', 'Mercredi', 'Jeudi', 'Vendredi', 'Samedi', 'Dimanche'];
+  const categories = ['Magazine', 'Musique', 'Sport', 'Actualité', 'Culture', 'Religion', 'Divertissement'];
+
+  useEffect(() => {
+    loadAnimateurs();
+  }, []);
+
+  const loadAnimateurs = async () => {
+    try {
+      const animateursData = await animateursService.getAll();
+      setAnimateurs(animateursData);
+    } catch (error) {
+      console.error('Erreur lors du chargement des animateurs:', error);
+    }
+  };
 
   if (!user) {
     return <Navigate to="/" replace />;
   }
 
-  const jours = ['Lundi', 'Mardi', 'Mercredi', 'Jeudi', 'Vendredi', 'Samedi', 'Dimanche'];
-  const categories = ['Magazine', 'Musique', 'Sport', 'Actualité', 'Culture', 'Religion', 'Divertissement'];
-
-  const handleAddAnimateur = () => {
-    if (newAnimateur.trim() && !formData.animateurs.includes(newAnimateur.trim())) {
+  const handleAnimateurSelect = (animateurId: string) => {
+    const animateur = animateurs.find(a => a.id === animateurId);
+    if (animateur && !formData.animateurs.includes(animateur.id)) {
       setFormData(prev => ({
         ...prev,
-        animateurs: [...prev.animateurs, newAnimateur.trim()]
+        animateurs: [...prev.animateurs, animateur.id]
       }));
-      setNewAnimateur('');
     }
   };
 
-  const handleRemoveAnimateur = (animateur: string) => {
+  const handleRemoveAnimateur = (animateurId: string) => {
     setFormData(prev => ({
       ...prev,
-      animateurs: prev.animateurs.filter(a => a !== animateur)
+      animateurs: prev.animateurs.filter(id => id !== animateurId)
     }));
+  };
+
+  const handleAnimateurCreated = (newAnimateur: Animateur) => {
+    setAnimateurs(prev => [...prev, newAnimateur]);
+    setFormData(prev => ({
+      ...prev,
+      animateurs: [...prev.animateurs, newAnimateur.id]
+    }));
+  };
+
+  const getAnimateurName = (id: string) => {
+    const animateur = animateurs.find(a => a.id === id);
+    return animateur ? `${animateur.nom} ${animateur.postnom}` : id;
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -65,30 +95,28 @@ const AddProgram = () => {
     }
 
     if (formData.animateurs.length === 0) {
-      toast.error('Veuillez ajouter au moins un animateur');
+      toast.error('Veuillez sélectionner au moins un animateur');
       return;
     }
 
     setIsLoading(true);
     
     try {
-      // Simulate API call
-      await new Promise(resolve => setTimeout(resolve, 1500));
-      
-      const newProgram: Program = {
-        id: Date.now().toString(),
+      const programData: Omit<Program, 'id'> = {
         ...formData,
         jour: formData.jour as Program['jour'],
         categorie: formData.categorie as Program['categorie'],
+        animateurs: formData.animateurs.map(id => getAnimateurName(id)),
         date_creation: new Date().toISOString(),
         date_modification: new Date().toISOString(),
         statut: 'À venir'
       };
 
-      console.log('Nouveau programme créé:', newProgram);
+      await programsService.create(programData);
       toast.success('Programme créé avec succès !');
       navigate('/programs');
     } catch (error) {
+      console.error('Erreur lors de la création du programme:', error);
       toast.error('Erreur lors de la création du programme');
     } finally {
       setIsLoading(false);
@@ -103,8 +131,8 @@ const AddProgram = () => {
         {/* Header */}
         <div className="mb-6 sm:mb-8">
           <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
-            <div>
-              <h1 className="text-2xl sm:text-3xl font-bold text-foreground">Nouveau Programme</h1>
+            <div className="min-w-0">
+              <h1 className="text-2xl sm:text-3xl font-bold text-foreground truncate">Nouveau Programme</h1>
               <p className="text-muted-foreground mt-1 text-sm sm:text-base">
                 Créez une nouvelle émission pour votre grille
               </p>
@@ -112,7 +140,7 @@ const AddProgram = () => {
             <Button
               variant="outline"
               onClick={() => navigate('/programs')}
-              className="self-start sm:self-auto"
+              className="self-start sm:self-auto flex-shrink-0"
             >
               <ArrowLeft className="h-4 w-4 mr-2" />
               Retour
@@ -121,14 +149,14 @@ const AddProgram = () => {
         </div>
 
         {/* Form */}
-        <Card>
+        <Card className="overflow-hidden">
           <CardHeader>
             <CardTitle className="flex items-center space-x-2">
               <Plus className="h-5 w-5" />
               <span>Informations du Programme</span>
             </CardTitle>
           </CardHeader>
-          <CardContent>
+          <CardContent className="p-4 sm:p-6">
             <form onSubmit={handleSubmit} className="space-y-6">
               {/* Nom du programme */}
               <div className="space-y-2">
@@ -217,20 +245,32 @@ const AddProgram = () => {
 
               {/* Animateurs */}
               <div className="space-y-4">
-                <Label>Animateurs *</Label>
+                <div className="flex items-center justify-between">
+                  <Label>Animateurs *</Label>
+                  <Button
+                    type="button"
+                    variant="outline"
+                    size="sm"
+                    onClick={() => setShowAnimateurForm(true)}
+                    className="text-xs"
+                  >
+                    <User className="h-3 w-3 mr-1" />
+                    Nouveau
+                  </Button>
+                </div>
                 
-                {/* Liste des animateurs */}
+                {/* Liste des animateurs sélectionnés */}
                 {formData.animateurs.length > 0 && (
                   <div className="flex flex-wrap gap-2">
-                    {formData.animateurs.map((animateur, index) => (
-                      <Badge key={index} variant="secondary" className="pr-1">
-                        {animateur}
+                    {formData.animateurs.map((animateurId) => (
+                      <Badge key={animateurId} variant="secondary" className="pr-1">
+                        {getAnimateurName(animateurId)}
                         <Button
                           type="button"
                           variant="ghost"
                           size="sm"
                           className="h-auto p-1 ml-1 hover:bg-destructive hover:text-destructive-foreground"
-                          onClick={() => handleRemoveAnimateur(animateur)}
+                          onClick={() => handleRemoveAnimateur(animateurId)}
                         >
                           <X className="h-3 w-3" />
                         </Button>
@@ -239,24 +279,21 @@ const AddProgram = () => {
                   </div>
                 )}
 
-                {/* Ajouter un animateur */}
-                <div className="flex gap-2">
-                  <Input
-                    value={newAnimateur}
-                    onChange={(e) => setNewAnimateur(e.target.value)}
-                    placeholder="Nom de l'animateur"
-                    onKeyPress={(e) => e.key === 'Enter' && (e.preventDefault(), handleAddAnimateur())}
-                    className="flex-1"
-                  />
-                  <Button
-                    type="button"
-                    variant="outline"
-                    onClick={handleAddAnimateur}
-                    disabled={!newAnimateur.trim()}
-                  >
-                    <Plus className="h-4 w-4" />
-                  </Button>
-                </div>
+                {/* Sélection d'animateur */}
+                <Select onValueChange={handleAnimateurSelect}>
+                  <SelectTrigger>
+                    <SelectValue placeholder="Sélectionner un animateur" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {animateurs
+                      .filter(animateur => !formData.animateurs.includes(animateur.id))
+                      .map((animateur) => (
+                      <SelectItem key={animateur.id} value={animateur.id}>
+                        {animateur.nom} {animateur.postnom} - {animateur.fonction}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
               </div>
 
               {/* Image URL */}
@@ -306,7 +343,7 @@ const AddProgram = () => {
 
         {/* Footer */}
         <div className="mt-8 pt-6 border-t border-border">
-          <p className="text-center text-sm text-muted-foreground">
+          <p className="text-center text-xs sm:text-sm text-muted-foreground">
             Fièrement conçu par{' '}
             <a 
               href="https://oredytech.com" 
@@ -319,6 +356,16 @@ const AddProgram = () => {
           </p>
         </div>
       </div>
+
+      {/* Dialog pour créer un animateur */}
+      <Dialog open={showAnimateurForm} onOpenChange={setShowAnimateurForm}>
+        <DialogContent className="max-w-md p-0 overflow-hidden">
+          <AnimateurForm
+            onAnimateurCreated={handleAnimateurCreated}
+            onClose={() => setShowAnimateurForm(false)}
+          />
+        </DialogContent>
+      </Dialog>
     </div>
   );
 };
