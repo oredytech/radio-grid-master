@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from 'react';
 import { Navigate } from 'react-router-dom';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -31,13 +30,17 @@ const Schedule = () => {
   }, []);
 
   useEffect(() => {
-    loadPrograms();
-  }, []);
+    if (user) {
+      loadPrograms();
+    }
+  }, [user]);
 
   const loadPrograms = async () => {
+    if (!user) return;
+    
     try {
       setIsLoading(true);
-      const programsData = await programsService.getAll();
+      const programsData = await programsService.getAll(user.id);
       setPrograms(programsData);
     } catch (error) {
       console.error('Erreur lors du chargement des programmes:', error);

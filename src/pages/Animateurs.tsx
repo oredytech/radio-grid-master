@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from 'react';
 import { Navigate } from 'react-router-dom';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -22,13 +21,17 @@ const Animateurs = () => {
   const [editingAnimateur, setEditingAnimateur] = useState<Animateur | null>(null);
 
   useEffect(() => {
-    loadAnimateurs();
-  }, []);
+    if (user) {
+      loadAnimateurs();
+    }
+  }, [user]);
 
   const loadAnimateurs = async () => {
+    if (!user) return;
+    
     try {
       setIsLoading(true);
-      const animateursData = await animateursService.getAll();
+      const animateursData = await animateursService.getAll(user.id);
       setAnimateurs(animateursData);
     } catch (error) {
       console.error('Erreur lors du chargement des animateurs:', error);

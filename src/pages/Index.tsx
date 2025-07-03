@@ -1,19 +1,25 @@
 
 import { useState } from 'react';
-import { Navigate } from 'react-router-dom';
+import { Navigate, Link } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Label } from '@/components/ui/label';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { Radio, Mail, Lock, Eye, EyeOff, User } from 'lucide-react';
+import { Radio, Mail, Lock, Eye, EyeOff, User, Building, Headphones } from 'lucide-react';
 import { useAuth } from '@/contexts/AuthContext';
 import { toast } from 'sonner';
 
 const Index = () => {
   const { user, login, register, isLoading } = useAuth();
   const [loginData, setLoginData] = useState({ email: '', password: '' });
-  const [registerData, setRegisterData] = useState({ email: '', password: '', name: '' });
+  const [registerData, setRegisterData] = useState({ 
+    email: '', 
+    password: '', 
+    name: '', 
+    fonction: '', 
+    radioName: '' 
+  });
   const [showPassword, setShowPassword] = useState(false);
   const [showRegisterPassword, setShowRegisterPassword] = useState(false);
   const [isLoggingIn, setIsLoggingIn] = useState(false);
@@ -43,7 +49,7 @@ const Index = () => {
 
   const handleRegister = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!registerData.email || !registerData.password || !registerData.name) {
+    if (!registerData.email || !registerData.password || !registerData.name || !registerData.fonction || !registerData.radioName) {
       toast.error('Veuillez remplir tous les champs');
       return;
     }
@@ -55,7 +61,7 @@ const Index = () => {
 
     setIsRegistering(true);
     try {
-      await register(registerData.email, registerData.password, registerData.name);
+      await register(registerData.email, registerData.password, registerData.name, registerData.fonction, registerData.radioName);
       toast.success('Compte créé avec succès !');
     } catch (error: any) {
       if (error.code === 'auth/email-already-in-use') {
@@ -181,7 +187,7 @@ const Index = () => {
               <TabsContent value="register" className="space-y-4">
                 <form onSubmit={handleRegister} className="space-y-4">
                   <div className="space-y-2">
-                    <Label htmlFor="register-name" className="text-sm">Nom complet</Label>
+                    <Label htmlFor="register-name" className="text-sm">Nom complet *</Label>
                     <div className="relative">
                       <User className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
                       <Input
@@ -197,7 +203,39 @@ const Index = () => {
                   </div>
 
                   <div className="space-y-2">
-                    <Label htmlFor="register-email" className="text-sm">Adresse e-mail</Label>
+                    <Label htmlFor="register-fonction" className="text-sm">Fonction dans l'entreprise *</Label>
+                    <div className="relative">
+                      <Building className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
+                      <Input
+                        id="register-fonction"
+                        type="text"
+                        placeholder="Directeur de Programme, Gérant, etc."
+                        value={registerData.fonction}
+                        onChange={(e) => setRegisterData(prev => ({ ...prev, fonction: e.target.value }))}
+                        className="pl-10"
+                        required
+                      />
+                    </div>
+                  </div>
+
+                  <div className="space-y-2">
+                    <Label htmlFor="register-radio" className="text-sm">Nom de la radio *</Label>
+                    <div className="relative">
+                      <Headphones className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
+                      <Input
+                        id="register-radio"
+                        type="text"
+                        placeholder="Radio Excellence FM"
+                        value={registerData.radioName}
+                        onChange={(e) => setRegisterData(prev => ({ ...prev, radioName: e.target.value }))}
+                        className="pl-10"
+                        required
+                      />
+                    </div>
+                  </div>
+
+                  <div className="space-y-2">
+                    <Label htmlFor="register-email" className="text-sm">Adresse e-mail *</Label>
                     <div className="relative">
                       <Mail className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
                       <Input
@@ -213,7 +251,7 @@ const Index = () => {
                   </div>
                   
                   <div className="space-y-2">
-                    <Label htmlFor="register-password" className="text-sm">Mot de passe</Label>
+                    <Label htmlFor="register-password" className="text-sm">Mot de passe *</Label>
                     <div className="relative">
                       <Lock className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
                       <Input
@@ -261,6 +299,16 @@ const Index = () => {
             </Tabs>
           </CardContent>
         </Card>
+
+        {/* Quick Navigation */}
+        <div className="text-center space-y-2">
+          <p className="text-sm text-muted-foreground">
+            Voulez-vous voir un exemple de programmation ?
+          </p>
+          <Link to="/full-program" className="text-sm text-primary hover:text-accent transition-colors font-medium">
+            Voir la grille complète
+          </Link>
+        </div>
 
         {/* Footer */}
         <div className="space-y-3">

@@ -14,13 +14,15 @@ interface User {
   id: string;
   email: string;
   name: string;
+  fonction?: string;
+  radioName?: string;
   role: 'admin' | 'animator' | 'guest';
 }
 
 interface AuthContextType {
   user: User | null;
   login: (email: string, password: string) => Promise<void>;
-  register: (email: string, password: string, name: string) => Promise<void>;
+  register: (email: string, password: string, name: string, fonction?: string, radioName?: string) => Promise<void>;
   logout: () => Promise<void>;
   isLoading: boolean;
 }
@@ -50,6 +52,8 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
             id: firebaseUser.uid,
             email: firebaseUser.email || '',
             name: userData.name || 'Utilisateur',
+            fonction: userData.fonction,
+            radioName: userData.radioName,
             role: userData.role || 'admin'
           });
         }
@@ -72,7 +76,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     }
   };
 
-  const register = async (email: string, password: string, name: string) => {
+  const register = async (email: string, password: string, name: string, fonction?: string, radioName?: string) => {
     setIsLoading(true);
     try {
       const userCredential = await createUserWithEmailAndPassword(auth, email, password);
@@ -82,6 +86,8 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       await setDoc(doc(db, 'utilisateurs', user.uid), {
         name,
         email,
+        fonction: fonction || '',
+        radioName: radioName || '',
         role: 'admin', // Tous les nouveaux utilisateurs sont des directeurs de programme
         date_creation: new Date().toISOString(),
         date_modification: new Date().toISOString()

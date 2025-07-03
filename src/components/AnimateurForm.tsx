@@ -1,4 +1,3 @@
-
 import { useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -7,6 +6,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { User, X, Image } from 'lucide-react';
 import { Animateur } from '@/types/animateur';
 import { animateursService } from '@/services/firebaseService';
+import { useAuth } from '@/contexts/AuthContext';
 import { toast } from 'sonner';
 
 interface AnimateurFormProps {
@@ -17,6 +17,7 @@ interface AnimateurFormProps {
 }
 
 const AnimateurForm = ({ onAnimateurCreated, onClose, animateur, isEditing = false }: AnimateurFormProps) => {
+  const { user } = useAuth();
   const [isLoading, setIsLoading] = useState(false);
   const [formData, setFormData] = useState({
     nom: animateur?.nom || '',
@@ -30,6 +31,11 @@ const AnimateurForm = ({ onAnimateurCreated, onClose, animateur, isEditing = fal
     
     if (!formData.nom || !formData.postnom || !formData.fonction) {
       toast.error('Veuillez remplir tous les champs obligatoires');
+      return;
+    }
+
+    if (!user) {
+      toast.error('Utilisateur non connecté');
       return;
     }
 
@@ -47,7 +53,7 @@ const AnimateurForm = ({ onAnimateurCreated, onClose, animateur, isEditing = fal
           ...formData,
           date_creation: new Date().toISOString(),
           date_modification: new Date().toISOString()
-        });
+        }, user.id);
 
         const newAnimateur: Animateur = {
           id: animateurId,

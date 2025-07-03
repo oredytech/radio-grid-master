@@ -48,9 +48,16 @@ const Navigation = () => {
               <Radio className="h-6 w-6 sm:h-8 sm:w-8 text-primary" />
               <div className="absolute -top-1 -right-1 h-2 w-2 bg-red-500 rounded-full animate-pulse"></div>
             </div>
-            <span className="text-sm sm:text-lg lg:text-xl font-bold bg-gradient-to-r from-primary to-accent bg-clip-text text-transparent hidden xs:block truncate">
-              RADIO PROGRAMMER
-            </span>
+            <div className="hidden xs:block truncate">
+              <span className="text-sm sm:text-lg lg:text-xl font-bold bg-gradient-to-r from-primary to-accent bg-clip-text text-transparent truncate">
+                {user?.radioName || 'RADIO PROGRAMMER'}
+              </span>
+              {user?.radioName && (
+                <div className="text-xs text-muted-foreground truncate">
+                  Radio Programmer
+                </div>
+              )}
+            </div>
           </Link>
 
           {/* Desktop Navigation */}
@@ -102,6 +109,11 @@ const Navigation = () => {
               <span className="font-medium text-foreground truncate max-w-[100px] lg:max-w-none">
                 {user?.name}
               </span>
+              {user?.fonction && (
+                <span className="hidden lg:inline text-xs">
+                  ({user.fonction})
+                </span>
+              )}
             </div>
             
             <Button
@@ -156,7 +168,10 @@ const Navigation = () => {
               
               <div className="border-t border-gray-200 dark:border-gray-700 pt-4 mt-4">
                 <div className="px-3 py-2 text-sm text-muted-foreground">
-                  Connecté en tant que: <span className="font-medium text-foreground">{user?.name}</span>
+                  <div>Connecté en tant que: <span className="font-medium text-foreground">{user?.name}</span></div>
+                  {user?.fonction && (
+                    <div className="text-xs mt-1">{user.fonction} - {user?.radioName}</div>
+                  )}
                 </div>
                 <Button
                   variant="outline"

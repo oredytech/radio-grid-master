@@ -10,6 +10,7 @@ import Schedule from "./pages/Schedule";
 import Programs from "./pages/Programs";
 import AddProgram from "./pages/AddProgram";
 import Animateurs from "./pages/Animateurs";
+import FullProgram from "./pages/FullProgram";
 import NotFound from "./pages/NotFound";
 import { AuthProvider } from "./contexts/AuthContext";
 
@@ -29,6 +30,8 @@ const App = () => (
             <Route path="/programs" element={<Programs />} />
             <Route path="/programs/add" element={<AddProgram />} />
             <Route path="/animateurs" element={<Animateurs />} />
+            <Route path="/full-program" element={<FullProgram />} />
+            <Route path="/:radioSlug/programme" element={<FullProgram />} />
             <Route path="*" element={<NotFound />} />
           </Routes>
         </BrowserRouter>
