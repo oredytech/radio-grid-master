@@ -16,13 +16,13 @@ import { useAuth } from '@/contexts/AuthContext';
 import { toast } from 'sonner';
 
 const Navigation = () => {
-  const { user, logout } = useAuth();
+  const { user, signOut } = useAuth();
   const location = useLocation();
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
 
   const handleLogout = async () => {
     try {
-      await logout();
+      await signOut();
       toast.success('Déconnexion réussie');
     } catch (error) {
       toast.error('Erreur lors de la déconnexion');
@@ -109,11 +109,9 @@ const Navigation = () => {
               <span className="font-medium text-foreground truncate max-w-[100px] lg:max-w-none">
                 {user?.name}
               </span>
-              {user?.fonction && (
-                <span className="hidden lg:inline text-xs">
-                  ({user.fonction})
-                </span>
-              )}
+              <span className="hidden lg:inline text-xs">
+                ({user?.role})
+              </span>
             </div>
             
             <Button
@@ -169,9 +167,7 @@ const Navigation = () => {
               <div className="border-t border-gray-200 dark:border-gray-700 pt-4 mt-4">
                 <div className="px-3 py-2 text-sm text-muted-foreground">
                   <div>Connecté en tant que: <span className="font-medium text-foreground">{user?.name}</span></div>
-                  {user?.fonction && (
-                    <div className="text-xs mt-1">{user.fonction} - {user?.radioName}</div>
-                  )}
+                  <div className="text-xs mt-1">{user?.role} - {user?.radioName}</div>
                 </div>
                 <Button
                   variant="outline"

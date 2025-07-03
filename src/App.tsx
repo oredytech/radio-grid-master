@@ -13,6 +13,7 @@ import EditProgram from "./pages/EditProgram";
 import Animateurs from "./pages/Animateurs";
 import FullProgram from "./pages/FullProgram";
 import FullProgramView from "./pages/FullProgramView";
+import StudioDisplay from "./pages/StudioDisplay";
 import NotFound from "./pages/NotFound";
 import { AuthProvider } from "./contexts/AuthContext";
 
@@ -36,6 +37,7 @@ const App = () => (
             <Route path="/full-program" element={<FullProgram />} />
             <Route path="/:radioSlug/programme" element={<FullProgram />} />
             <Route path="/:radioSlug/full-programme" element={<FullProgramView />} />
+            <Route path="/:radioSlug/studio-display" element={<StudioDisplay />} />
             <Route path="*" element={<NotFound />} />
           </Routes>
         </BrowserRouter>
