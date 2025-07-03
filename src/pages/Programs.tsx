@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from 'react';
 import { Navigate, useNavigate } from 'react-router-dom';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -60,12 +61,12 @@ const Programs = () => {
   };
 
   const handleDelete = async (programId: string) => {
-    if (!confirm('Êtes-vous sûr de vouloir supprimer ce programme ?')) {
+    if (!user || !confirm('Êtes-vous sûr de vouloir supprimer ce programme ?')) {
       return;
     }
 
     try {
-      await programsService.delete(programId);
+      await programsService.delete(programId, user.id);
       setPrograms(prev => prev.filter(p => p.id !== programId));
       toast.success('Programme supprimé avec succès');
     } catch (error) {
