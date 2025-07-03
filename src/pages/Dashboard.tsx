@@ -1,9 +1,9 @@
-
 import { useState, useEffect } from 'react';
-import { Navigate } from 'react-router-dom';
+import { Navigate, Link } from 'react-router-dom';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
-import { Radio, Clock, Calendar, Users, TrendingUp, Zap } from 'lucide-react';
+import { Button } from '@/components/ui/button';
+import { Radio, Clock, Calendar, Users, TrendingUp, Zap, Monitor } from 'lucide-react';
 import { useAuth } from '@/contexts/AuthContext';
 import Navigation from '@/components/Navigation';
 import ProgramCard from '@/components/ProgramCard';
@@ -127,13 +127,21 @@ const Dashboard = () => {
                 Vue d'ensemble de votre programmation radio
               </p>
             </div>
-            <div className="text-left sm:text-right flex-shrink-0">
-              <div className="text-xl sm:text-2xl font-mono font-bold text-primary">
-                {currentTime}
+            <div className="flex items-center gap-3">
+              <div className="text-left sm:text-right flex-shrink-0">
+                <div className="text-xl sm:text-2xl font-mono font-bold text-primary">
+                  {currentTime}
+                </div>
+                <div className="text-xs sm:text-sm text-muted-foreground">
+                  {currentDay}
+                </div>
               </div>
-              <div className="text-xs sm:text-sm text-muted-foreground">
-                {currentDay}
-              </div>
+              <Link to={`/${user.radioSlug}/studio-display`}>
+                <Button variant="outline" size="sm" className="flex items-center gap-2">
+                  <Monitor className="h-4 w-4" />
+                  <span className="hidden sm:inline">Studio Display</span>
+                </Button>
+              </Link>
             </div>
           </div>
         </div>

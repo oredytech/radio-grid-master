@@ -28,6 +28,7 @@ const FullProgramView = () => {
   const loadRadioPrograms = async () => {
     try {
       setIsLoading(true);
+      console.log('Loading programs for radioSlug:', radioSlug);
       
       // Rechercher l'utilisateur par le slug de la radio
       const usersQuery = query(
@@ -36,6 +37,7 @@ const FullProgramView = () => {
       );
       
       const usersSnapshot = await getDocs(usersQuery);
+      console.log('Users found:', usersSnapshot.size);
       
       if (usersSnapshot.empty) {
         console.log('Aucune radio trouvée pour le slug:', radioSlug);
@@ -46,6 +48,7 @@ const FullProgramView = () => {
       const userDoc = usersSnapshot.docs[0];
       const userData = userDoc.data();
       const userId = userDoc.id;
+      console.log('User data:', userData);
 
       setRadioInfo({
         name: userData.radioName || 'Radio',
@@ -53,7 +56,9 @@ const FullProgramView = () => {
       });
 
       // Récupérer les programmes de cet utilisateur
+      console.log('Loading programs for userId:', userId);
       const programsData = await programsService.getAll(userId);
+      console.log('Programs loaded:', programsData.length);
       setPrograms(programsData);
       
     } catch (error) {

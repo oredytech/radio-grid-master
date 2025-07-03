@@ -1,4 +1,3 @@
-
 import { useState } from 'react';
 import { Navigate, Link } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
@@ -11,7 +10,7 @@ import { useAuth } from '@/contexts/AuthContext';
 import { toast } from 'sonner';
 
 const Index = () => {
-  const { user, login, register, isLoading } = useAuth();
+  const { user, signIn, signUp, loading } = useAuth();
   const [loginData, setLoginData] = useState({ email: '', password: '' });
   const [registerData, setRegisterData] = useState({ 
     email: '', 
@@ -38,7 +37,7 @@ const Index = () => {
 
     setIsLoggingIn(true);
     try {
-      await login(loginData.email, loginData.password);
+      await signIn(loginData.email, loginData.password);
       toast.success('Connexion réussie !');
     } catch (error) {
       toast.error('Erreur de connexion');
@@ -61,7 +60,7 @@ const Index = () => {
 
     setIsRegistering(true);
     try {
-      await register(registerData.email, registerData.password, registerData.name, registerData.fonction, registerData.radioName);
+      await signUp(registerData.email, registerData.password, registerData.name, registerData.fonction, registerData.radioName);
       toast.success('Compte créé avec succès !');
     } catch (error: any) {
       if (error.code === 'auth/email-already-in-use') {
@@ -76,7 +75,7 @@ const Index = () => {
     }
   };
 
-  if (isLoading) {
+  if (loading) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-background via-background to-card">
         <div className="animate-spin rounded-full h-32 w-32 border-b-2 border-primary"></div>
