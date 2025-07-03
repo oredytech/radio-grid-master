@@ -8,92 +8,112 @@ import {
   getDocs, 
   query, 
   orderBy,
-  where,
-  Timestamp 
+  Timestamp,
+  setDoc
 } from 'firebase/firestore';
 import { ref, uploadBytes, getDownloadURL } from 'firebase/storage';
 import { db, storage } from '@/config/firebase';
 import { Program } from '@/types/program';
 import { Animateur } from '@/types/animateur';
 
-// Programs Service avec isolation par utilisateur
-export const programsService = {
-  async create(program: Omit<Program, 'id'>, userId: string) {
-    const docRef = await addDoc(collection(db, 'programmes'), {
-      ...program,
-      userId, // Ajout de l'ID utilisateur
+// Service pour créer la collection utilisateur avec ses sous-collections
+export const userCollectionService = {
+  async createUserCollection(userId: string, userData: any) {
+    // Créer le document directeur/admin dans la collection utilisateur
+    await setDoc(doc(db, `utilisateurs/${userId}/directeur`, 'info'), {
+      ...userData,
       date_creation: Timestamp.now(),
       date_modification: Timestamp.now()
     });
+    
+    console.log(`Collection utilisateur créée pour ${userId}`);
+  }
+};
+
+// Programs Service avec collections utilisateur
+export const programsService = {
+  async create(program: Omit<Program, 'id'>, userId: string) {
+    console.log('Création programme pour utilisateur:', userId);
+    const docRef = await addDoc(collection(db, `utilisateurs/${userId}/programmes`), {
+      ...program,
+      date_creation: Timestamp.now(),
+      date_modification: Timestamp.now()
+    });
+    console.log('Programme créé avec ID:', docRef.id);
     return docRef.id;
   },
 
   async getAll(userId: string) {
+    console.log('Récupération programmes pour utilisateur:', userId);
     const q = query(
-      collection(db, 'programmes'), 
-      where('userId', '==', userId),
+      collection(db, `utilisateurs/${userId}/programmes`), 
       orderBy('date_creation', 'desc')
     );
     const querySnapshot = await getDocs(q);
-    return querySnapshot.docs.map(doc => ({
+    const programs = querySnapshot.docs.map(doc => ({
       id: doc.id,
       ...doc.data(),
       date_creation: doc.data().date_creation?.toDate?.()?.toISOString() || doc.data().date_creation,
       date_modification: doc.data().date_modification?.toDate?.()?.toISOString() || doc.data().date_modification
     })) as Program[];
+    console.log('Programmes récupérés:', programs.length);
+    return programs;
   },
 
-  async update(id: string, program: Partial<Program>) {
-    const docRef = doc(db, 'programmes', id);
+  async update(id: string, program: Partial<Program>, userId: string) {
+    const docRef = doc(db, `utilisateurs/${userId}/programmes`, id);
     await updateDoc(docRef, {
       ...program,
       date_modification: Timestamp.now()
     });
   },
 
-  async delete(id: string) {
-    const docRef = doc(db, 'programmes', id);
+  async delete(id: string, userId: string) {
+    const docRef = doc(db, `utilisateurs/${userId}/programmes`, id);
     await deleteDoc(docRef);
   }
 };
 
-// Animateurs Service avec isolation par utilisateur
+// Animateurs Service avec collections utilisateur
 export const animateursService = {
   async create(animateur: Omit<Animateur, 'id'>, userId: string) {
-    const docRef = await addDoc(collection(db, 'animateurs'), {
+    console.log('Création animateur pour utilisateur:', userId);
+    const docRef = await addDoc(collection(db, `utilisateurs/${userId}/animateurs`), {
       ...animateur,
-      userId, // Ajout de l'ID utilisateur
       date_creation: Timestamp.now(),
       date_modification: Timestamp.now()
     });
+    console.log('Animateur créé avec ID:', docRef.id);
     return docRef.id;
   },
 
   async getAll(userId: string) {
+    console.log('Récupération animateurs pour utilisateur:', userId);
     const q = query(
-      collection(db, 'animateurs'), 
-      where('userId', '==', userId),
+      collection(db, `utilisateurs/${userId}/animateurs`), 
       orderBy('nom', 'asc')
     );
     const querySnapshot = await getDocs(q);
-    return querySnapshot.docs.map(doc => ({
+    const animateurs = querySnapshot.docs.map(doc => ({
       id: doc.id,
       ...doc.data(),
       date_creation: doc.data().date_creation?.toDate?.()?.toISOString() || doc.data().date_creation,
       date_modification: doc.data().date_modification?.toDate?.()?.toISOString() || doc.data().date_modification
     })) as Animateur[];
+    console.log('Animateurs récupérés:', animateurs.length);
+    return animateurs;
   },
 
-  async update(id: string, animateur: Partial<Animateur>) {
-    const docRef = doc(db, 'animateurs', id);
+  async update(id: string, animateur: Partial<Animateur>, userId: string) {
+    const docRef = doc(db, `utilisateurs/${userId}/animateurs`, id);
     await updateDoc(docRef, {
       ...animateur,
       date_modification: Timestamp.now()
     });
   },
 
-  async delete(id: string) {
-    const docRef = doc(db, 'animateurs', id);
+  async delete(id: string, userId: string) {
+    const docRef = doc(db, `utilisateurs/${userId}/animateurs`, id);
     await deleteDoc(docRef);
   }
 };

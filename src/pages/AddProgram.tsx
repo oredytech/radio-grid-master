@@ -84,6 +84,8 @@ const AddProgram = () => {
     setIsLoading(true);
     
     try {
+      console.log('Création programme:', { formData, userId: user.id });
+      
       await programsService.create({
         nom: formData.nom,
         description: formData.description,

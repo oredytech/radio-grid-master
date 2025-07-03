@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from 'react';
 import { Navigate } from 'react-router-dom';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -30,8 +31,10 @@ const Animateurs = () => {
     if (!user) return;
     
     try {
+      console.log('Chargement des animateurs pour utilisateur:', user.id);
       setIsLoading(true);
       const animateursData = await animateursService.getAll(user.id);
+      console.log('Animateurs chargés:', animateursData);
       setAnimateurs(animateursData);
     } catch (error) {
       console.error('Erreur lors du chargement des animateurs:', error);
@@ -62,7 +65,7 @@ const Animateurs = () => {
     }
 
     try {
-      await animateursService.delete(animateurId);
+      await animateursService.delete(animateurId, user.id);
       setAnimateurs(prev => prev.filter(a => a.id !== animateurId));
       toast.success('Animateur supprimé avec succès');
     } catch (error) {

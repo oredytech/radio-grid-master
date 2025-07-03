@@ -1,3 +1,4 @@
+
 import { useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -42,11 +43,13 @@ const AnimateurForm = ({ onAnimateurCreated, onClose, animateur, isEditing = fal
     setIsLoading(true);
     
     try {
+      console.log('Soumission formulaire animateur:', { formData, userId: user.id, isEditing });
+      
       if (isEditing && animateur) {
         await animateursService.update(animateur.id, {
           ...formData,
           date_modification: new Date().toISOString()
-        });
+        }, user.id);
         toast.success('Animateur modifié avec succès !');
       } else {
         const animateurId = await animateursService.create({
@@ -54,6 +57,8 @@ const AnimateurForm = ({ onAnimateurCreated, onClose, animateur, isEditing = fal
           date_creation: new Date().toISOString(),
           date_modification: new Date().toISOString()
         }, user.id);
+
+        console.log('Animateur créé avec ID:', animateurId);
 
         const newAnimateur: Animateur = {
           id: animateurId,

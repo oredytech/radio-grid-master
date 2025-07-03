@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from 'react';
 import { Navigate, useNavigate } from 'react-router-dom';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -22,13 +21,17 @@ const Programs = () => {
   const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
-    loadPrograms();
-  }, []);
+    if (user) {
+      loadPrograms();
+    }
+  }, [user]);
 
   const loadPrograms = async () => {
+    if (!user) return;
+    
     try {
       setIsLoading(true);
-      const programsData = await programsService.getAll();
+      const programsData = await programsService.getAll(user.id);
       setPrograms(programsData);
     } catch (error) {
       console.error('Erreur lors du chargement des programmes:', error);
@@ -57,6 +60,10 @@ const Programs = () => {
   };
 
   const handleDelete = async (programId: string) => {
+    if (!confirm('Êtes-vous sûr de vouloir supprimer ce programme ?')) {
+      return;
+    }
+
     try {
       await programsService.delete(programId);
       setPrograms(prev => prev.filter(p => p.id !== programId));
