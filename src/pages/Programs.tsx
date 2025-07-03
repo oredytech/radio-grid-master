@@ -5,12 +5,14 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
-import { Plus, Search, Filter, Edit, Trash2, Users, Clock } from 'lucide-react';
+import { Plus, Search, Filter, Users, Clock } from 'lucide-react';
 import { useAuth } from '@/contexts/AuthContext';
 import Navigation from '@/components/Navigation';
+import ProgramActions from '@/components/ProgramActions';
 import { Program, CATEGORIES_COLORS } from '@/types/program';
 import { programsService } from '@/services/firebaseService';
 import { formatDuration } from '@/utils/timeUtils';
+import { getRadioSlugFromUser } from '@/utils/slugUtils';
 import { toast } from 'sonner';
 
 const Programs = () => {
@@ -56,8 +58,7 @@ const Programs = () => {
   });
 
   const handleEdit = (program: Program) => {
-    console.log('Edit program:', program);
-    toast.info('Fonctionnalité d\'édition en cours de développement');
+    navigate(`/programs/edit/${program.id}`);
   };
 
   const handleDelete = async (programId: string) => {
@@ -72,6 +73,15 @@ const Programs = () => {
     } catch (error) {
       console.error('Erreur lors de la suppression:', error);
       toast.error('Erreur lors de la suppression du programme');
+    }
+  };
+
+  const handleViewFullProgram = () => {
+    if (user?.radioName) {
+      const slug = getRadioSlugFromUser(user.radioName);
+      navigate(`/${slug}/full-programme`);
+    } else {
+      toast.error('Nom de la radio non configuré');
     }
   };
 
@@ -104,14 +114,25 @@ const Programs = () => {
                 Créez, modifiez et organisez vos émissions
               </p>
             </div>
-            <Button 
-              onClick={handleAddProgram}
-              className="bg-gradient-to-r from-primary to-accent hover:from-primary/90 hover:to-accent/90 self-start sm:self-auto flex-shrink-0"
-            >
-              <Plus className="h-4 w-4 mr-2" />
-              <span className="hidden sm:inline">Nouveau Programme</span>
-              <span className="sm:hidden">Nouveau</span>
-            </Button>
+            <div className="flex gap-2">
+              <Button 
+                onClick={handleViewFullProgram}
+                variant="outline"
+                className="flex-shrink-0"
+              >
+                <Search className="h-4 w-4 mr-2" />
+                <span className="hidden sm:inline">Voir Programme Complet</span>
+                <span className="sm:hidden">Programme</span>
+              </Button>
+              <Button 
+                onClick={handleAddProgram}
+                className="bg-gradient-to-r from-primary to-accent hover:from-primary/90 hover:to-accent/90 flex-shrink-0"
+              >
+                <Plus className="h-4 w-4 mr-2" />
+                <span className="hidden sm:inline">Nouveau Programme</span>
+                <span className="sm:hidden">Nouveau</span>
+              </Button>
+            </div>
           </div>
         </div>
 
@@ -215,25 +236,12 @@ const Programs = () => {
                         </div>
                       </div>
                       
-                      <div className="flex space-x-2 flex-shrink-0 self-start">
-                        <Button
-                          variant="outline"
-                          size="sm"
-                          onClick={() => handleEdit(program)}
-                        >
-                          <Edit className="h-3 w-3 sm:h-4 sm:w-4" />
-                          <span className="sr-only sm:not-sr-only sm:ml-1">Modifier</span>
-                        </Button>
-                        <Button
-                          variant="outline"
-                          size="sm"
-                          onClick={() => handleDelete(program.id)}
-                          className="text-destructive hover:text-destructive"
-                        >
-                          <Trash2 className="h-3 w-3 sm:h-4 sm:w-4" />
-                          <span className="sr-only sm:not-sr-only sm:ml-1">Supprimer</span>
-                        </Button>
-                      </div>
+                      <ProgramActions
+                        program={program}
+                        onEdit={handleEdit}
+                        onDelete={handleDelete}
+                        onViewFull={handleViewFullProgram}
+                      />
                     </div>
                   </CardContent>
                 </Card>

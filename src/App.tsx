@@ -9,8 +9,10 @@ import Dashboard from "./pages/Dashboard";
 import Schedule from "./pages/Schedule";
 import Programs from "./pages/Programs";
 import AddProgram from "./pages/AddProgram";
+import EditProgram from "./pages/EditProgram";
 import Animateurs from "./pages/Animateurs";
 import FullProgram from "./pages/FullProgram";
+import FullProgramView from "./pages/FullProgramView";
 import NotFound from "./pages/NotFound";
 import { AuthProvider } from "./contexts/AuthContext";
 
@@ -29,9 +31,11 @@ const App = () => (
             <Route path="/schedule" element={<Schedule />} />
             <Route path="/programs" element={<Programs />} />
             <Route path="/programs/add" element={<AddProgram />} />
+            <Route path="/programs/edit/:id" element={<EditProgram />} />
             <Route path="/animateurs" element={<Animateurs />} />
             <Route path="/full-program" element={<FullProgram />} />
             <Route path="/:radioSlug/programme" element={<FullProgram />} />
+            <Route path="/:radioSlug/full-programme" element={<FullProgramView />} />
             <Route path="*" element={<NotFound />} />
           </Routes>
         </BrowserRouter>
