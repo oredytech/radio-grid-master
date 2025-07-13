@@ -1,15 +1,16 @@
-
 import { useState, useEffect } from 'react';
 import { useParams } from 'react-router-dom';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { Calendar, Clock, Share2, Users, Radio, Copy } from 'lucide-react';
+import { Calendar, Clock, Users, Radio } from 'lucide-react';
 import { Program, CATEGORIES_COLORS } from '@/types/program';
 import { programsService } from '@/services/firebaseService';
 import { collection, query, where, getDocs } from 'firebase/firestore';
 import { db } from '@/config/firebase';
 import { toast } from 'sonner';
+import ProgramHeader from '@/components/ProgramHeader';
+import ProgramTable from '@/components/ProgramTable';
+import ProgramStatistics from '@/components/ProgramStatistics';
 
 const FullProgramView = () => {
   const { radioSlug } = useParams();
@@ -125,33 +126,19 @@ const FullProgramView = () => {
   return (
     <div className="min-h-screen bg-background">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6 sm:py-8">
-        {/* Header */}
-        <div className="mb-6 sm:mb-8">
-          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
-            <div className="min-w-0">
-              <div className="flex items-center space-x-3 mb-2">
-                <Radio className="h-8 w-8 text-primary" />
-                <h1 className="text-2xl sm:text-3xl font-bold text-foreground">
-                  {radioInfo.name}
-                </h1>
-              </div>
-              <p className="text-muted-foreground text-sm sm:text-base">
-                Grille de programmation hebdomadaire - Dirigé par {radioInfo.director}
-              </p>
-            </div>
-            <Button
-              onClick={shareProgram}
-              variant="outline"
-              className="self-start sm:self-auto flex-shrink-0"
-            >
-              <Share2 className="h-4 w-4 mr-2" />
-              Partager
-            </Button>
-          </div>
+        <ProgramHeader 
+          radioName={radioInfo.name}
+          director={radioInfo.director}
+          onShare={shareProgram}
+        />
+
+        {/* Program Table */}
+        <div className="mb-8">
+          <ProgramTable programs={programs} radioName={radioInfo.name} />
         </div>
 
-        {/* Weekly Schedule */}
-        <div className="grid grid-cols-1 lg:grid-cols-2 xl:grid-cols-3 gap-6">
+        {/* Weekly Schedule Grid */}
+        <div className="grid grid-cols-1 lg:grid-cols-2 xl:grid-cols-3 gap-6 mb-8">
           {days.map((day) => {
             const dayPrograms = getProgramsForDay(day);
             return (
@@ -222,48 +209,7 @@ const FullProgramView = () => {
           })}
         </div>
 
-        {/* Statistics */}
-        <Card className="mt-8">
-          <CardHeader>
-            <CardTitle>Statistiques de la grille</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 text-center">
-              <div className="space-y-2">
-                <div className="text-2xl font-bold text-primary">
-                  {programs.length}
-                </div>
-                <p className="text-sm text-muted-foreground">
-                  Programmes total
-                </p>
-              </div>
-              <div className="space-y-2">
-                <div className="text-2xl font-bold text-primary">
-                  {[...new Set(programs.map(p => p.categorie))].length}
-                </div>
-                <p className="text-sm text-muted-foreground">
-                  Catégories
-                </p>
-              </div>
-              <div className="space-y-2">
-                <div className="text-2xl font-bold text-primary">
-                  {[...new Set(programs.flatMap(p => p.animateurs))].length}
-                </div>
-                <p className="text-sm text-muted-foreground">
-                  Animateurs
-                </p>
-              </div>
-              <div className="space-y-2">
-                <div className="text-2xl font-bold text-primary">
-                  {days.filter(day => getProgramsForDay(day).length > 0).length}
-                </div>
-                <p className="text-sm text-muted-foreground">
-                  Jours actifs
-                </p>
-              </div>
-            </div>
-          </CardContent>
-        </Card>
+        <ProgramStatistics programs={programs} days={days} />
 
         {/* Footer */}
         <div className="mt-8 pt-6 border-t border-border">
