@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from 'react';
 import { Navigate, useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
@@ -15,12 +14,17 @@ import { Program, CATEGORIES } from '@/types/program';
 import { Animateur } from '@/types/animateur';
 import { programsService, animateursService } from '@/services/firebaseService';
 import { toast } from 'sonner';
+import { ProgramConflictDialog } from '@/components/ProgramConflictDialog';
+import { detectProgramConflicts, ProgramConflict } from '@/utils/programConflicts';
 
 const AddProgram = () => {
   const { user } = useAuth();
   const navigate = useNavigate();
   const [isLoading, setIsLoading] = useState(false);
   const [animateurs, setAnimateurs] = useState<Animateur[]>([]);
+  const [programs, setPrograms] = useState<Program[]>([]);
+  const [showConflictDialog, setShowConflictDialog] = useState(false);
+  const [conflicts, setConflicts] = useState<ProgramConflict[]>([]);
   const [formData, setFormData] = useState({
     nom: '',
     description: '',
@@ -37,6 +41,7 @@ const AddProgram = () => {
   useEffect(() => {
     if (user) {
       loadAnimateurs();
+      loadPrograms();
     }
   }, [user]);
 
@@ -48,6 +53,17 @@ const AddProgram = () => {
       setAnimateurs(animateursData);
     } catch (error) {
       console.error('Erreur lors du chargement des animateurs:', error);
+    }
+  };
+
+  const loadPrograms = async () => {
+    if (!user) return;
+    
+    try {
+      const programsData = await programsService.getAll(user.id);
+      setPrograms(programsData);
+    } catch (error) {
+      console.error('Erreur lors du chargement des programmes:', error);
     }
   };
 
@@ -73,19 +89,7 @@ const AddProgram = () => {
     }));
   };
 
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    
-    if (!formData.nom || !formData.description || formData.jours.length === 0 || !formData.heure_debut || !formData.heure_fin || !formData.categorie) {
-      toast.error('Veuillez remplir tous les champs obligatoires');
-      return;
-    }
-
-    if (formData.heure_debut >= formData.heure_fin) {
-      toast.error('L\'heure de fin doit être après l\'heure de début');
-      return;
-    }
-
+  const createPrograms = async () => {
     setIsLoading(true);
     
     try {
@@ -118,6 +122,88 @@ const AddProgram = () => {
     } finally {
       setIsLoading(false);
     }
+  };
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    
+    if (!formData.nom || !formData.description || formData.jours.length === 0 || !formData.heure_debut || !formData.heure_fin || !formData.categorie) {
+      toast.error('Veuillez remplir tous les champs obligatoires');
+      return;
+    }
+
+    if (formData.heure_debut >= formData.heure_fin) {
+      toast.error('L\'heure de fin doit être après l\'heure de début');
+      return;
+    }
+
+    // Détecter les conflits
+    const detectedConflicts = detectProgramConflicts(
+      programs,
+      formData.jours,
+      formData.heure_debut,
+      formData.heure_fin
+    );
+
+    if (detectedConflicts.length > 0) {
+      setConflicts(detectedConflicts);
+      setShowConflictDialog(true);
+      return;
+    }
+
+    // Aucun conflit, créer directement
+    await createPrograms();
+  };
+
+  const handleConflictReplace = async (conflictingPrograms: Program[]) => {
+    setIsLoading(true);
+    try {
+      // Supprimer les programmes en conflit
+      await Promise.all(
+        conflictingPrograms.map(program => 
+          programsService.delete(program.id, user.id)
+        )
+      );
+      
+      // Créer les nouveaux programmes
+      await createPrograms();
+      
+      setShowConflictDialog(false);
+    } catch (error) {
+      console.error('Erreur lors du remplacement:', error);
+      toast.error('Erreur lors du remplacement des programmes');
+      setIsLoading(false);
+    }
+  };
+
+  const handleConflictModify = (program: Program) => {
+    navigate(`/programs/edit/${program.id}`);
+  };
+
+  const handleConflictDelete = async (programsToDelete: Program[]) => {
+    setIsLoading(true);
+    try {
+      await Promise.all(
+        programsToDelete.map(program => 
+          programsService.delete(program.id, user.id)
+        )
+      );
+      
+      // Recharger les programmes et créer le nouveau
+      await loadPrograms();
+      await createPrograms();
+      
+      setShowConflictDialog(false);
+    } catch (error) {
+      console.error('Erreur lors de la suppression:', error);
+      toast.error('Erreur lors de la suppression des programmes');
+      setIsLoading(false);
+    }
+  };
+
+  const handleConflictContinue = async () => {
+    setShowConflictDialog(false);
+    await createPrograms();
   };
 
   return (
@@ -372,6 +458,17 @@ const AddProgram = () => {
           </p>
         </div>
       </div>
+
+      {/* Conflict Dialog */}
+      <ProgramConflictDialog
+        open={showConflictDialog}
+        onClose={() => setShowConflictDialog(false)}
+        conflicts={conflicts}
+        onReplace={handleConflictReplace}
+        onModify={handleConflictModify}
+        onDelete={handleConflictDelete}
+        onContinue={handleConflictContinue}
+      />
     </div>
   );
 };
