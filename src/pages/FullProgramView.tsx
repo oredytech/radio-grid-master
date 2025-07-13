@@ -46,7 +46,7 @@ const FullProgramView = () => {
         // Définir des informations par défaut basées sur le slug
         setRadioInfo({
           name: radioSlug?.replace(/-/g, ' ').replace(/\b\w/g, l => l.toUpperCase()) || 'Radio',
-          director: 'Directeur'
+          director: 'Non spécifié'
         });
         setPrograms([]);
         setIsLoading(false);
@@ -60,18 +60,44 @@ const FullProgramView = () => {
 
       setRadioInfo({
         name: userData.radioName || radioSlug?.replace(/-/g, ' ').replace(/\b\w/g, l => l.toUpperCase()) || 'Radio',
-        director: userData.name || 'Directeur'
+        director: userData.name || 'Non spécifié'
       });
 
-      // Récupérer les programmes de cet utilisateur
+      // Récupérer les programmes de cet utilisateur avec une approche plus robuste
       console.log('Loading programs for userId:', userId);
-      const programsData = await programsService.getAll(userId);
-      console.log('Programs loaded:', programsData.length);
-      setPrograms(programsData);
+      try {
+        const programsData = await programsService.getAll(userId);
+        console.log('Programs loaded:', programsData.length);
+        setPrograms(programsData);
+      } catch (programError) {
+        console.log('Erreur lors du chargement des programmes, tentative de récupération alternative:', programError);
+        // Tentative de récupération directe depuis Firestore
+        try {
+          const programsQuery = query(
+            collection(db, 'programmes'),
+            where('userId', '==', userId)
+          );
+          const programsSnapshot = await getDocs(programsQuery);
+          const programsData = programsSnapshot.docs.map(doc => ({
+            id: doc.id,
+            ...doc.data()
+          })) as Program[];
+          console.log('Programs loaded via alternative method:', programsData.length);
+          setPrograms(programsData);
+        } catch (altError) {
+          console.log('Erreur alternative, affichage sans programmes:', altError);
+          setPrograms([]);
+        }
+      }
       
     } catch (error) {
       console.error('Erreur lors du chargement des programmes:', error);
-      toast.error('Erreur lors du chargement des programmes');
+      // Ne pas afficher d'erreur toast, simplement définir des valeurs par défaut
+      setRadioInfo({
+        name: radioSlug?.replace(/-/g, ' ').replace(/\b\w/g, l => l.toUpperCase()) || 'Radio',
+        director: 'Non spécifié'
+      });
+      setPrograms([]);
     } finally {
       setIsLoading(false);
     }
@@ -118,14 +144,14 @@ const FullProgramView = () => {
     <div className="min-h-screen bg-background">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6 sm:py-8">
         <ProgramHeader 
-          radioName={radioInfo?.name || 'Radio'}
-          director={radioInfo?.director || 'Directeur'}
+          radioName={radioInfo?.name || radioSlug?.replace(/-/g, ' ').replace(/\b\w/g, l => l.toUpperCase()) || 'Radio'}
+          director={radioInfo?.director || 'Non spécifié'}
           onShare={shareProgram}
         />
 
         {/* Program Table */}
         <div className="mb-8">
-          <ProgramTable programs={programs} radioName={radioInfo?.name || 'Radio'} />
+          <ProgramTable programs={programs} radioName={radioInfo?.name || radioSlug?.replace(/-/g, ' ').replace(/\b\w/g, l => l.toUpperCase()) || 'Radio'} />
         </div>
 
         {programs.length === 0 ? (

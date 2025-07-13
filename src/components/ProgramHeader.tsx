@@ -20,7 +20,7 @@ const ProgramHeader = ({ radioName, director, onShare }: ProgramHeaderProps) => 
             </h1>
           </div>
           <p className="text-muted-foreground text-sm sm:text-base">
-            Grille de programmation hebdomadaire - Dirigé par {director}
+            Grille de programmation hebdomadaire - Directeur de programme : {director}
           </p>
         </div>
         <Button
