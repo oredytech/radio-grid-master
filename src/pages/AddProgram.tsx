@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from 'react';
 import { Navigate, useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
@@ -7,7 +8,7 @@ import { Textarea } from '@/components/ui/textarea';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Checkbox } from '@/components/ui/checkbox';
-import { ArrowLeft, Plus, Image } from 'lucide-react';
+import { ArrowLeft, Plus, Image, Calendar } from 'lucide-react';
 import { useAuth } from '@/contexts/AuthContext';
 import Navigation from '@/components/Navigation';
 import { Program, CATEGORIES } from '@/types/program';
@@ -23,7 +24,7 @@ const AddProgram = () => {
   const [formData, setFormData] = useState({
     nom: '',
     description: '',
-    jour: '' as Program['jour'] | '',
+    jours: [] as Program['jour'][],
     heure_debut: '',
     heure_fin: '',
     categorie: '' as Program['categorie'] | '',
@@ -54,6 +55,15 @@ const AddProgram = () => {
     return <Navigate to="/" replace />;
   }
 
+  const handleJourToggle = (jour: Program['jour']) => {
+    setFormData(prev => ({
+      ...prev,
+      jours: prev.jours.includes(jour)
+        ? prev.jours.filter(j => j !== jour)
+        : [...prev.jours, jour]
+    }));
+  };
+
   const handleAnimateurToggle = (animateurName: string) => {
     setFormData(prev => ({
       ...prev,
@@ -66,13 +76,8 @@ const AddProgram = () => {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     
-    if (!formData.nom || !formData.description || !formData.jour || !formData.heure_debut || !formData.heure_fin || !formData.categorie) {
+    if (!formData.nom || !formData.description || formData.jours.length === 0 || !formData.heure_debut || !formData.heure_fin || !formData.categorie) {
       toast.error('Veuillez remplir tous les champs obligatoires');
-      return;
-    }
-
-    if (formData.animateurs.length === 0) {
-      toast.error('Veuillez sélectionner au moins un animateur');
       return;
     }
 
@@ -84,23 +89,28 @@ const AddProgram = () => {
     setIsLoading(true);
     
     try {
-      console.log('Création programme:', { formData, userId: user.id });
+      console.log('Création programmes:', { formData, userId: user.id });
       
-      await programsService.create({
-        nom: formData.nom,
-        description: formData.description,
-        jour: formData.jour as Program['jour'],
-        heure_debut: formData.heure_debut,
-        heure_fin: formData.heure_fin,
-        categorie: formData.categorie as Program['categorie'],
-        animateurs: formData.animateurs,
-        imageUrl: formData.imageUrl,
-        statut: 'En cours',
-        date_creation: new Date().toISOString(),
-        date_modification: new Date().toISOString()
-      }, user.id);
+      // Créer un programme pour chaque jour sélectionné
+      const programPromises = formData.jours.map(jour => 
+        programsService.create({
+          nom: formData.nom,
+          description: formData.description,
+          jour: jour,
+          heure_debut: formData.heure_debut,
+          heure_fin: formData.heure_fin,
+          categorie: formData.categorie as Program['categorie'],
+          animateurs: formData.animateurs,
+          imageUrl: formData.imageUrl,
+          statut: 'En cours',
+          date_creation: new Date().toISOString(),
+          date_modification: new Date().toISOString()
+        }, user.id)
+      );
 
-      toast.success('Programme créé avec succès !');
+      await Promise.all(programPromises);
+
+      toast.success(`Programme${formData.jours.length > 1 ? 's' : ''} créé${formData.jours.length > 1 ? 's' : ''} avec succès !`);
       navigate('/programs');
     } catch (error) {
       console.error('Erreur lors de la création du programme:', error);
@@ -186,23 +196,33 @@ const AddProgram = () => {
                 />
               </div>
 
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-4 sm:gap-6">
-                <div className="space-y-2">
-                  <Label htmlFor="jour">Jour *</Label>
-                  <Select value={formData.jour} onValueChange={(value) => setFormData(prev => ({ ...prev, jour: value as Program['jour'] }))}>
-                    <SelectTrigger>
-                      <SelectValue placeholder="Sélectionner un jour" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {jours.map((jour) => (
-                        <SelectItem key={jour} value={jour}>
-                          {jour}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
+              <div className="space-y-4">
+                <Label className="flex items-center space-x-2">
+                  <Calendar className="h-4 w-4" />
+                  <span>Jours de diffusion * (Sélectionnez un ou plusieurs jours)</span>
+                </Label>
+                <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-3">
+                  {jours.map((jour) => (
+                    <div key={jour} className="flex items-center space-x-2 p-3 border rounded-lg hover:bg-accent/50 transition-colors">
+                      <Checkbox
+                        id={jour}
+                        checked={formData.jours.includes(jour)}
+                        onCheckedChange={() => handleJourToggle(jour)}
+                      />
+                      <Label htmlFor={jour} className="text-sm font-medium cursor-pointer flex-1">
+                        {jour}
+                      </Label>
+                    </div>
+                  ))}
                 </div>
+                {formData.jours.length > 0 && (
+                  <p className="text-xs text-muted-foreground">
+                    Jours sélectionnés: {formData.jours.join(', ')}
+                  </p>
+                )}
+              </div>
 
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4 sm:gap-6">
                 <div className="space-y-2">
                   <Label htmlFor="heure_debut">Heure de début *</Label>
                   <Input
@@ -255,7 +275,7 @@ const AddProgram = () => {
               </div>
 
               <div className="space-y-4">
-                <Label>Animateurs * (Sélectionnez au moins un)</Label>
+                <Label>Animateurs (optionnel)</Label>
                 {animateurs.length === 0 ? (
                   <div className="text-center py-8 text-muted-foreground">
                     <p className="text-sm">Aucun animateur disponible</p>
@@ -300,6 +320,11 @@ const AddProgram = () => {
                       </div>
                     ))}
                   </div>
+                )}
+                {formData.animateurs.length > 0 && (
+                  <p className="text-xs text-muted-foreground">
+                    Animateurs sélectionnés: {formData.animateurs.join(', ')}
+                  </p>
                 )}
               </div>
 
