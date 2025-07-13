@@ -33,7 +33,7 @@ export const ProgramConflictDialog = ({
   onDelete,
   onContinue
 }: ProgramConflictDialogProps) => {
-  const [selectedAction, setSelectedAction] = useState<'replace' | 'modify' | 'delete' | null>(null);
+  const [selectedAction, setSelectedAction] = useState<'replace' | 'modify' | 'delete' | 'continue' | null>(null);
   const [selectedPrograms, setSelectedPrograms] = useState<Program[]>([]);
 
   const handleAction = () => {
@@ -50,6 +50,9 @@ export const ProgramConflictDialog = ({
         break;
       case 'delete':
         onDelete(selectedPrograms);
+        break;
+      case 'continue':
+        onContinue();
         break;
     }
     onClose();
@@ -185,7 +188,12 @@ export const ProgramConflictDialog = ({
                 </CardContent>
               </Card>
 
-              <Card className="cursor-pointer hover:bg-accent/50" onClick={onContinue}>
+              <Card 
+                className={`cursor-pointer transition-all ${
+                  selectedAction === 'continue' ? 'ring-2 ring-primary bg-primary/5' : 'hover:bg-accent/50'
+                }`}
+                onClick={() => setSelectedAction('continue')}
+              >
                 <CardContent className="p-4">
                   <div className="flex items-center space-x-3">
                     <AlertTriangle className="h-5 w-5 text-yellow-500" />
@@ -206,11 +214,12 @@ export const ProgramConflictDialog = ({
             <Button variant="outline" onClick={onClose}>
               Annuler
             </Button>
-            {selectedAction && selectedAction !== 'continue' && (
+            {selectedAction && (
               <Button onClick={handleAction}>
                 Confirmer {selectedAction === 'replace' ? 'le remplacement' : 
-                         selectedAction === 'modify' ? 'la modification' : 
-                         'la suppression'}
+                         selectedAction === 'modify' ? 'la modification' :
+                         selectedAction === 'delete' ? 'la suppression' :
+                         'et continuer'}
               </Button>
             )}
           </div>

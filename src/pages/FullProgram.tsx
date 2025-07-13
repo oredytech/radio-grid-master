@@ -3,7 +3,7 @@ import { useState, useEffect } from 'react';
 import { useParams } from 'react-router-dom';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
-import { Calendar, Clock, Users, Radio } from 'lucide-react';
+import { Calendar, Clock, Users } from 'lucide-react';
 import { Program, CATEGORIES_COLORS } from '@/types/program';
 import { programsService } from '@/services/firebaseService';
 import { collection, query, where, getDocs } from 'firebase/firestore';
@@ -43,6 +43,12 @@ const FullProgram = () => {
       
       if (usersSnapshot.empty) {
         console.log('Aucune radio trouvée pour le slug:', radioSlug);
+        // Définir des informations par défaut basées sur le slug
+        setRadioInfo({
+          name: radioSlug?.replace(/-/g, ' ').replace(/\b\w/g, l => l.toUpperCase()) || 'Radio',
+          director: 'Directeur'
+        });
+        setPrograms([]);
         setIsLoading(false);
         return;
       }
@@ -53,7 +59,7 @@ const FullProgram = () => {
       console.log('User data:', userData);
 
       setRadioInfo({
-        name: userData.radioName || 'Radio',
+        name: userData.radioName || radioSlug?.replace(/-/g, ' ').replace(/\b\w/g, l => l.toUpperCase()) || 'Radio',
         director: userData.name || 'Directeur'
       });
 
@@ -108,109 +114,107 @@ const FullProgram = () => {
     );
   }
 
-  if (!radioInfo) {
-    return (
-      <div className="min-h-screen bg-background flex items-center justify-center">
-        <Card className="max-w-md mx-auto">
-          <CardContent className="p-8 text-center">
-            <Radio className="h-12 w-12 mx-auto mb-4 text-muted-foreground" />
-            <h2 className="text-xl font-semibold mb-2">Radio non trouvée</h2>
-            <p className="text-muted-foreground">
-              Cette radio n'existe pas ou n'a pas encore publié sa grille de programmation.
-            </p>
-          </CardContent>
-        </Card>
-      </div>
-    );
-  }
-
   return (
     <div className="min-h-screen bg-background">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6 sm:py-8">
         <ProgramHeader 
-          radioName={radioInfo.name}
-          director={radioInfo.director}
+          radioName={radioInfo?.name || 'Radio'}
+          director={radioInfo?.director || 'Directeur'}
           onShare={shareProgram}
         />
 
         {/* Program Table */}
         <div className="mb-8">
-          <ProgramTable programs={programs} radioName={radioInfo.name} />
+          <ProgramTable programs={programs} radioName={radioInfo?.name || 'Radio'} />
         </div>
 
-        {/* Weekly Schedule Grid */}
-        <div className="grid grid-cols-1 lg:grid-cols-2 xl:grid-cols-3 gap-6 mb-8">
-          {days.map((day) => {
-            const dayPrograms = getProgramsForDay(day);
-            return (
-              <Card key={day} className="overflow-hidden">
-                <CardHeader className="pb-4">
-                  <CardTitle className="flex items-center justify-between">
-                    <div className="flex items-center space-x-2">
-                      <Calendar className="h-5 w-5" />
-                      <span>{day}</span>
-                    </div>
-                    <Badge variant="outline" className="text-xs">
-                      {dayPrograms.length} programmes
-                    </Badge>
-                  </CardTitle>
-                </CardHeader>
-                <CardContent className="space-y-3">
-                  {dayPrograms.length === 0 ? (
-                    <div className="text-center py-8 text-muted-foreground">
-                      <Clock className="h-8 w-8 mx-auto mb-2 opacity-50" />
-                      <p className="text-sm">Aucun programme</p>
-                    </div>
-                  ) : (
-                    dayPrograms.map((program) => {
-                      const categoryGradient = CATEGORIES_COLORS[program.categorie];
-                      return (
-                        <div
-                          key={program.id}
-                          className={`p-4 rounded-lg bg-gradient-to-r ${categoryGradient} text-white`}
-                        >
-                          <div className="space-y-2">
-                            <div className="flex items-center justify-between">
-                              <h3 className="font-semibold text-sm sm:text-base truncate">
-                                {program.nom}
-                              </h3>
-                              <Badge variant="secondary" className="text-xs flex-shrink-0 ml-2">
-                                {program.categorie}
-                              </Badge>
-                            </div>
-                            
-                            <p className="text-xs sm:text-sm opacity-90 line-clamp-2">
-                              {program.description}
-                            </p>
-                            
-                            <div className="flex items-center justify-between text-xs">
-                              <div className="flex items-center space-x-1">
-                                <Clock className="h-3 w-3" />
-                                <span className="font-mono">
-                                  {program.heure_debut} - {program.heure_fin}
-                                </span>
-                              </div>
-                              {program.animateurs.length > 0 && (
-                                <div className="flex items-center space-x-1">
-                                  <Users className="h-3 w-3" />
-                                  <span className="truncate max-w-[100px]">
-                                    {program.animateurs.join(', ')}
-                                  </span>
-                                </div>
-                              )}
-                            </div>
-                          </div>
+        {programs.length === 0 ? (
+          <Card className="text-center py-12">
+            <CardContent>
+              <Calendar className="h-16 w-16 mx-auto mb-4 text-muted-foreground opacity-50" />
+              <h3 className="text-xl font-semibold mb-2">Aucun programme disponible</h3>
+              <p className="text-muted-foreground">
+                Cette radio n'a pas encore publié sa grille de programmation.
+              </p>
+            </CardContent>
+          </Card>
+        ) : (
+          <>
+            {/* Weekly Schedule Grid */}
+            <div className="grid grid-cols-1 lg:grid-cols-2 xl:grid-cols-3 gap-6 mb-8">
+              {days.map((day) => {
+                const dayPrograms = getProgramsForDay(day);
+                return (
+                  <Card key={day} className="overflow-hidden">
+                    <CardHeader className="pb-4">
+                      <CardTitle className="flex items-center justify-between">
+                        <div className="flex items-center space-x-2">
+                          <Calendar className="h-5 w-5" />
+                          <span>{day}</span>
                         </div>
-                      );
-                    })
-                  )}
-                </CardContent>
-              </Card>
-            );
-          })}
-        </div>
+                        <Badge variant="outline" className="text-xs">
+                          {dayPrograms.length} programmes
+                        </Badge>
+                      </CardTitle>
+                    </CardHeader>
+                    <CardContent className="space-y-3">
+                      {dayPrograms.length === 0 ? (
+                        <div className="text-center py-8 text-muted-foreground">
+                          <Clock className="h-8 w-8 mx-auto mb-2 opacity-50" />
+                          <p className="text-sm">Aucun programme</p>
+                        </div>
+                      ) : (
+                        dayPrograms.map((program) => {
+                          const categoryGradient = CATEGORIES_COLORS[program.categorie];
+                          return (
+                            <div
+                              key={program.id}
+                              className={`p-4 rounded-lg bg-gradient-to-r ${categoryGradient} text-white`}
+                            >
+                              <div className="space-y-2">
+                                <div className="flex items-center justify-between">
+                                  <h3 className="font-semibold text-sm sm:text-base truncate">
+                                    {program.nom}
+                                  </h3>
+                                  <Badge variant="secondary" className="text-xs flex-shrink-0 ml-2">
+                                    {program.categorie}
+                                  </Badge>
+                                </div>
+                                
+                                <p className="text-xs sm:text-sm opacity-90 line-clamp-2">
+                                  {program.description}
+                                </p>
+                                
+                                <div className="flex items-center justify-between text-xs">
+                                  <div className="flex items-center space-x-1">
+                                    <Clock className="h-3 w-3" />
+                                    <span className="font-mono">
+                                      {program.heure_debut} - {program.heure_fin}
+                                    </span>
+                                  </div>
+                                  {program.animateurs.length > 0 && (
+                                    <div className="flex items-center space-x-1">
+                                      <Users className="h-3 w-3" />
+                                      <span className="truncate max-w-[100px]">
+                                        {program.animateurs.join(', ')}
+                                      </span>
+                                    </div>
+                                  )}
+                                </div>
+                              </div>
+                            </div>
+                          );
+                        })
+                      )}
+                    </CardContent>
+                  </Card>
+                );
+              })}
+            </div>
 
-        <ProgramStatistics programs={programs} days={days} />
+            <ProgramStatistics programs={programs} days={days} />
+          </>
+        )}
 
         {/* Footer */}
         <div className="mt-8 pt-6 border-t border-border">
