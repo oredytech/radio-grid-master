@@ -1,3 +1,4 @@
+
 import { useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -61,32 +62,32 @@ const ProgramTable = ({ programs, radioName }: ProgramTableProps) => {
 
   if (viewMode === 'grid') {
     return (
-      <div className="space-y-4">
-        <Card>
-          <CardHeader>
-            <div className="flex items-center justify-between">
-              <CardTitle className="flex items-center space-x-2">
-                <Grid3X3 className="h-5 w-5" />
-                <span>Grille complète des programmes</span>
+      <div className="space-y-4 w-full">
+        <Card className="w-full">
+          <CardHeader className="pb-4">
+            <div className="flex flex-col space-y-4 sm:flex-row sm:items-center sm:justify-between sm:space-y-0">
+              <CardTitle className="flex items-center space-x-2 text-base sm:text-lg">
+                <Grid3X3 className="h-4 w-4 sm:h-5 sm:w-5 flex-shrink-0" />
+                <span className="truncate">Grille complète des programmes</span>
               </CardTitle>
-              <div className="flex items-center space-x-2">
+              <div className="flex flex-col space-y-2 sm:flex-row sm:items-center sm:space-y-0 sm:space-x-2">
                 <Button 
                   onClick={() => setViewMode('table')}
                   variant="outline"
                   size="sm"
-                  className="flex items-center gap-2"
+                  className="flex items-center gap-2 w-full sm:w-auto"
                 >
-                  <FileSpreadsheet className="h-4 w-4" />
-                  Vue tableau
+                  <FileSpreadsheet className="h-4 w-4 flex-shrink-0" />
+                  <span className="truncate">Vue tableau</span>
                 </Button>
                 <Button 
                   onClick={exportToCSV} 
                   disabled={isExporting}
                   size="sm"
-                  className="flex items-center gap-2"
+                  className="flex items-center gap-2 w-full sm:w-auto"
                 >
-                  <Download className="h-4 w-4" />
-                  {isExporting ? 'Export...' : 'Télécharger CSV'}
+                  <Download className="h-4 w-4 flex-shrink-0" />
+                  <span className="truncate">{isExporting ? 'Export...' : 'Télécharger CSV'}</span>
                 </Button>
               </div>
             </div>
@@ -99,101 +100,114 @@ const ProgramTable = ({ programs, radioName }: ProgramTableProps) => {
   }
 
   return (
-    <Card>
-      <CardHeader>
-        <div className="flex items-center justify-between">
-          <CardTitle className="flex items-center space-x-2">
-            <FileSpreadsheet className="h-5 w-5" />
-            <span>Grille complète des programmes</span>
+    <Card className="w-full">
+      <CardHeader className="pb-4">
+        <div className="flex flex-col space-y-4 sm:flex-row sm:items-center sm:justify-between sm:space-y-0">
+          <CardTitle className="flex items-center space-x-2 text-base sm:text-lg">
+            <FileSpreadsheet className="h-4 w-4 sm:h-5 sm:w-5 flex-shrink-0" />
+            <span className="truncate">Grille complète des programmes</span>
           </CardTitle>
-          <div className="flex items-center space-x-2">
+          <div className="flex flex-col space-y-2 sm:flex-row sm:items-center sm:space-y-0 sm:space-x-2">
             <Button 
               onClick={() => setViewMode('grid')}
               variant="outline"
               size="sm"
-              className="flex items-center gap-2"
+              className="flex items-center gap-2 w-full sm:w-auto"
             >
-              <Grid3X3 className="h-4 w-4" />
-              Vue grille
+              <Grid3X3 className="h-4 w-4 flex-shrink-0" />
+              <span className="truncate">Vue grille</span>
             </Button>
             <Button 
               onClick={exportToCSV} 
               disabled={isExporting}
               size="sm"
-              className="flex items-center gap-2"
+              className="flex items-center gap-2 w-full sm:w-auto"
             >
-              <Download className="h-4 w-4" />
-              {isExporting ? 'Export...' : 'Télécharger CSV'}
+              <Download className="h-4 w-4 flex-shrink-0" />
+              <span className="truncate">{isExporting ? 'Export...' : 'Télécharger CSV'}</span>
             </Button>
           </div>
         </div>
       </CardHeader>
-      <CardContent>
-        <div className="rounded-md border">
-          <Table>
-            <TableHeader>
-              <TableRow>
-                <TableHead className="w-[100px]">Jour</TableHead>
-                <TableHead className="w-[120px]">Horaire</TableHead>
-                <TableHead>Programme</TableHead>
-                <TableHead>Animateurs</TableHead>
-                <TableHead className="w-[120px]">Catégorie</TableHead>
-                <TableHead className="hidden md:table-cell">Description</TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {sortedPrograms.length === 0 ? (
+      <CardContent className="p-4 sm:p-6">
+        <div className="rounded-md border overflow-hidden">
+          <div className="overflow-x-auto">
+            <Table>
+              <TableHeader>
                 <TableRow>
-                  <TableCell colSpan={6} className="text-center py-8 text-muted-foreground">
-                    Aucun programme disponible
-                  </TableCell>
+                  <TableHead className="w-[80px] sm:w-[100px] text-xs sm:text-sm">Jour</TableHead>
+                  <TableHead className="w-[100px] sm:w-[120px] text-xs sm:text-sm">Horaire</TableHead>
+                  <TableHead className="min-w-[150px] text-xs sm:text-sm">Programme</TableHead>
+                  <TableHead className="min-w-[120px] text-xs sm:text-sm">Animateurs</TableHead>
+                  <TableHead className="w-[100px] sm:w-[120px] text-xs sm:text-sm">Catégorie</TableHead>
+                  <TableHead className="hidden md:table-cell min-w-[200px] text-xs sm:text-sm">Description</TableHead>
                 </TableRow>
-              ) : (
-                sortedPrograms.map((program) => {
-                  const categoryGradient = CATEGORIES_COLORS[program.categorie];
-                  return (
-                    <TableRow key={program.id} className="hover:bg-muted/50">
-                      <TableCell className="font-medium">{program.jour}</TableCell>
-                      <TableCell className="font-mono text-sm">
-                        <div className="space-y-1">
-                          <div>{program.heure_debut}</div>
-                          <div className="text-muted-foreground">{program.heure_fin}</div>
-                        </div>
-                      </TableCell>
-                      <TableCell>
-                        <div className="font-semibold">{program.nom}</div>
-                      </TableCell>
-                      <TableCell>
-                        <div className="space-y-1">
-                          {program.animateurs.length > 0 ? (
-                            program.animateurs.map((animateur, index) => (
-                              <Badge key={index} variant="secondary" className="text-xs mr-1">
-                                {animateur}
-                              </Badge>
-                            ))
-                          ) : (
-                            <span className="text-muted-foreground text-sm">-</span>
-                          )}
-                        </div>
-                      </TableCell>
-                      <TableCell>
-                        <Badge 
-                          className={`bg-gradient-to-r ${categoryGradient} text-white border-0`}
-                        >
-                          {program.categorie}
-                        </Badge>
-                      </TableCell>
-                      <TableCell className="hidden md:table-cell max-w-[300px]">
-                        <p className="text-sm text-muted-foreground line-clamp-2">
-                          {program.description}
-                        </p>
-                      </TableCell>
-                    </TableRow>
-                  );
-                })
-              )}
-            </TableBody>
-          </Table>
+              </TableHeader>
+              <TableBody>
+                {sortedPrograms.length === 0 ? (
+                  <TableRow>
+                    <TableCell colSpan={6} className="text-center py-8 text-muted-foreground text-sm">
+                      Aucun programme disponible
+                    </TableCell>
+                  </TableRow>
+                ) : (
+                  sortedPrograms.map((program) => {
+                    const categoryGradient = CATEGORIES_COLORS[program.categorie];
+                    return (
+                      <TableRow key={program.id} className="hover:bg-muted/50">
+                        <TableCell className="font-medium text-xs sm:text-sm p-2 sm:p-4">
+                          <span className="hidden sm:inline">{program.jour}</span>
+                          <span className="sm:hidden">{program.jour.slice(0, 3)}</span>
+                        </TableCell>
+                        <TableCell className="font-mono text-xs p-2 sm:p-4">
+                          <div className="space-y-1">
+                            <div>{program.heure_debut}</div>
+                            <div className="text-muted-foreground text-xs">{program.heure_fin}</div>
+                          </div>
+                        </TableCell>
+                        <TableCell className="p-2 sm:p-4">
+                          <div className="font-semibold text-xs sm:text-sm truncate max-w-[120px] sm:max-w-none">
+                            {program.nom}
+                          </div>
+                        </TableCell>
+                        <TableCell className="p-2 sm:p-4">
+                          <div className="space-y-1">
+                            {program.animateurs.length > 0 ? (
+                              <div className="flex flex-wrap gap-1">
+                                {program.animateurs.map((animateur, index) => (
+                                  <Badge key={index} variant="secondary" className="text-xs px-1 py-0.5">
+                                    <span className="truncate max-w-[60px] sm:max-w-none">
+                                      {animateur}
+                                    </span>
+                                  </Badge>
+                                ))}
+                              </div>
+                            ) : (
+                              <span className="text-muted-foreground text-xs">-</span>
+                            )}
+                          </div>
+                        </TableCell>
+                        <TableCell className="p-2 sm:p-4">
+                          <Badge 
+                            className={`bg-gradient-to-r ${categoryGradient} text-white border-0 text-xs px-2 py-1`}
+                          >
+                            <span className="truncate max-w-[60px] sm:max-w-none">
+                              {program.categorie}
+                            </span>
+                          </Badge>
+                        </TableCell>
+                        <TableCell className="hidden md:table-cell max-w-[250px] p-2 sm:p-4">
+                          <p className="text-xs sm:text-sm text-muted-foreground line-clamp-2">
+                            {program.description}
+                          </p>
+                        </TableCell>
+                      </TableRow>
+                    );
+                  })
+                )}
+              </TableBody>
+            </Table>
+          </div>
         </div>
       </CardContent>
     </Card>
