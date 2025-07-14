@@ -32,7 +32,7 @@ const FullProgramView = () => {
       setIsLoading(true);
       console.log('Loading programs for radioSlug:', radioSlug);
       
-      // Rechercher l'utilisateur par le slug de la radio
+      // Rechercher l'utilisateur par le slug de la radio dans la collection utilisateurs
       const usersQuery = query(
         collection(db, 'utilisateurs'),
         where('radioSlug', '==', radioSlug)
@@ -44,9 +44,10 @@ const FullProgramView = () => {
       if (usersSnapshot.empty) {
         console.log('Aucune radio trouvée pour le slug:', radioSlug);
         // Définir des informations par défaut basées sur le slug
+        const defaultRadioName = radioSlug?.replace(/-/g, ' ').replace(/\b\w/g, l => l.toUpperCase()) || 'Radio';
         setRadioInfo({
-          name: radioSlug?.replace(/-/g, ' ').replace(/\b\w/g, l => l.toUpperCase()) || 'Radio',
-          director: 'Non spécifié'
+          name: defaultRadioName,
+          director: 'Directeur de programme non spécifié'
         });
         setPrograms([]);
         setIsLoading(false);
@@ -58,44 +59,72 @@ const FullProgramView = () => {
       const userId = userDoc.id;
       console.log('User data:', userData);
 
+      // Définir les informations de la radio
+      const radioName = userData.radioName || radioSlug?.replace(/-/g, ' ').replace(/\b\w/g, l => l.toUpperCase()) || 'Radio';
+      const directorName = userData.name || 'Non spécifié';
+      
       setRadioInfo({
-        name: userData.radioName || radioSlug?.replace(/-/g, ' ').replace(/\b\w/g, l => l.toUpperCase()) || 'Radio',
-        director: userData.name || 'Non spécifié'
+        name: radioName,
+        director: directorName
       });
 
-      // Récupérer les programmes de cet utilisateur avec une approche plus robuste
+      // Récupérer les programmes depuis la sous-collection programmes de l'utilisateur
       console.log('Loading programs for userId:', userId);
+      
       try {
+        // Utiliser le service programmes avec la nouvelle structure
         const programsData = await programsService.getAll(userId);
-        console.log('Programs loaded:', programsData.length);
+        console.log('Programs loaded via service:', programsData.length);
         setPrograms(programsData);
       } catch (programError) {
-        console.log('Erreur lors du chargement des programmes, tentative de récupération alternative:', programError);
-        // Tentative de récupération directe depuis Firestore
+        console.log('Erreur service programmes, tentative directe:', programError);
+        
+        // Tentative de récupération directe depuis la sous-collection
         try {
-          const programsQuery = query(
-            collection(db, 'programmes'),
-            where('userId', '==', userId)
+          const userProgramsQuery = query(
+            collection(db, `utilisateurs/${userId}/programmes`)
           );
-          const programsSnapshot = await getDocs(programsQuery);
+          const programsSnapshot = await getDocs(userProgramsQuery);
           const programsData = programsSnapshot.docs.map(doc => ({
             id: doc.id,
-            ...doc.data()
+            ...doc.data(),
+            date_creation: doc.data().date_creation?.toDate?.()?.toISOString() || doc.data().date_creation,
+            date_modification: doc.data().date_modification?.toDate?.()?.toISOString() || doc.data().date_modification
           })) as Program[];
-          console.log('Programs loaded via alternative method:', programsData.length);
+          console.log('Programs loaded via direct query:', programsData.length);
           setPrograms(programsData);
-        } catch (altError) {
-          console.log('Erreur alternative, affichage sans programmes:', altError);
-          setPrograms([]);
+        } catch (directError) {
+          console.log('Erreur requête directe:', directError);
+          
+          // Dernière tentative avec l'ancienne structure (fallback)
+          try {
+            const oldProgramsQuery = query(
+              collection(db, 'programmes'),
+              where('userId', '==', userId)
+            );
+            const oldProgramsSnapshot = await getDocs(oldProgramsQuery);
+            const oldProgramsData = oldProgramsSnapshot.docs.map(doc => ({
+              id: doc.id,
+              ...doc.data(),
+              date_creation: doc.data().date_creation?.toDate?.()?.toISOString() || doc.data().date_creation,
+              date_modification: doc.data().date_modification?.toDate?.()?.toISOString() || doc.data().date_modification
+            })) as Program[];
+            console.log('Programs loaded via fallback method:', oldProgramsData.length);
+            setPrograms(oldProgramsData);
+          } catch (fallbackError) {
+            console.log('Toutes les méthodes ont échoué:', fallbackError);
+            setPrograms([]);
+          }
         }
       }
       
     } catch (error) {
-      console.error('Erreur lors du chargement des programmes:', error);
-      // Ne pas afficher d'erreur toast, simplement définir des valeurs par défaut
+      console.error('Erreur générale lors du chargement des programmes:', error);
+      // Définir des valeurs par défaut en cas d'erreur
+      const defaultRadioName = radioSlug?.replace(/-/g, ' ').replace(/\b\w/g, l => l.toUpperCase()) || 'Radio';
       setRadioInfo({
-        name: radioSlug?.replace(/-/g, ' ').replace(/\b\w/g, l => l.toUpperCase()) || 'Radio',
-        director: 'Non spécifié'
+        name: defaultRadioName,
+        director: 'Directeur de programme non spécifié'
       });
       setPrograms([]);
     } finally {
@@ -145,7 +174,7 @@ const FullProgramView = () => {
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6 sm:py-8">
         <ProgramHeader 
           radioName={radioInfo?.name || radioSlug?.replace(/-/g, ' ').replace(/\b\w/g, l => l.toUpperCase()) || 'Radio'}
-          director={radioInfo?.director || 'Non spécifié'}
+          director={radioInfo?.director || 'Directeur de programme non spécifié'}
           onShare={shareProgram}
         />
 
@@ -158,9 +187,9 @@ const FullProgramView = () => {
           <Card className="text-center py-12">
             <CardContent>
               <Calendar className="h-16 w-16 mx-auto mb-4 text-muted-foreground opacity-50" />
-              <h3 className="text-xl font-semibold mb-2">Aucun programme disponible</h3>
+              <h3 className="text-xl font-semibold mb-2">Grille de programmation en préparation</h3>
               <p className="text-muted-foreground">
-                Cette radio n'a pas encore publié sa grille de programmation.
+                La grille de programmation de cette radio sera bientôt disponible.
               </p>
             </CardContent>
           </Card>
