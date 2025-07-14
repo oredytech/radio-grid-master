@@ -1,12 +1,12 @@
-
 import { useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
-import { Download, FileSpreadsheet } from 'lucide-react';
+import { Download, FileSpreadsheet, Grid3X3 } from 'lucide-react';
 import { Program, CATEGORIES_COLORS } from '@/types/program';
 import { toast } from 'sonner';
+import ProgramGridView from './ProgramGridView';
 
 interface ProgramTableProps {
   programs: Program[];
@@ -15,6 +15,7 @@ interface ProgramTableProps {
 
 const ProgramTable = ({ programs, radioName }: ProgramTableProps) => {
   const [isExporting, setIsExporting] = useState(false);
+  const [viewMode, setViewMode] = useState<'table' | 'grid'>('grid');
 
   const sortedPrograms = [...programs].sort((a, b) => {
     const dayOrder = ['Lundi', 'Mardi', 'Mercredi', 'Jeudi', 'Vendredi', 'Samedi', 'Dimanche'];
@@ -58,6 +59,45 @@ const ProgramTable = ({ programs, radioName }: ProgramTableProps) => {
     }
   };
 
+  if (viewMode === 'grid') {
+    return (
+      <div className="space-y-4">
+        <Card>
+          <CardHeader>
+            <div className="flex items-center justify-between">
+              <CardTitle className="flex items-center space-x-2">
+                <Grid3X3 className="h-5 w-5" />
+                <span>Grille complète des programmes</span>
+              </CardTitle>
+              <div className="flex items-center space-x-2">
+                <Button 
+                  onClick={() => setViewMode('table')}
+                  variant="outline"
+                  size="sm"
+                  className="flex items-center gap-2"
+                >
+                  <FileSpreadsheet className="h-4 w-4" />
+                  Vue tableau
+                </Button>
+                <Button 
+                  onClick={exportToCSV} 
+                  disabled={isExporting}
+                  size="sm"
+                  className="flex items-center gap-2"
+                >
+                  <Download className="h-4 w-4" />
+                  {isExporting ? 'Export...' : 'Télécharger CSV'}
+                </Button>
+              </div>
+            </div>
+          </CardHeader>
+        </Card>
+        
+        <ProgramGridView programs={programs} />
+      </div>
+    );
+  }
+
   return (
     <Card>
       <CardHeader>
@@ -66,15 +106,26 @@ const ProgramTable = ({ programs, radioName }: ProgramTableProps) => {
             <FileSpreadsheet className="h-5 w-5" />
             <span>Grille complète des programmes</span>
           </CardTitle>
-          <Button 
-            onClick={exportToCSV} 
-            disabled={isExporting}
-            size="sm"
-            className="flex items-center gap-2"
-          >
-            <Download className="h-4 w-4" />
-            {isExporting ? 'Export...' : 'Télécharger CSV'}
-          </Button>
+          <div className="flex items-center space-x-2">
+            <Button 
+              onClick={() => setViewMode('grid')}
+              variant="outline"
+              size="sm"
+              className="flex items-center gap-2"
+            >
+              <Grid3X3 className="h-4 w-4" />
+              Vue grille
+            </Button>
+            <Button 
+              onClick={exportToCSV} 
+              disabled={isExporting}
+              size="sm"
+              className="flex items-center gap-2"
+            >
+              <Download className="h-4 w-4" />
+              {isExporting ? 'Export...' : 'Télécharger CSV'}
+            </Button>
+          </div>
         </div>
       </CardHeader>
       <CardContent>
