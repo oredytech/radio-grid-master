@@ -115,10 +115,10 @@ export const ProgramImport = ({ onImportComplete }: { onImportComplete?: () => v
         const programData = {
           titre: program.titre,
           jour: program.jour as "Lundi" | "Mardi" | "Mercredi" | "Jeudi" | "Vendredi" | "Samedi" | "Dimanche",
-          heureDebut: program.heureDebut,
-          heureFin: program.heureFin,
-          type: program.type as "Musique" | "Divertissement" | "Sport" | "Culture" | "Magazine" | "Actualité" | "Religion",
-          animateur: program.animateur,
+          heure_debut: program.heureDebut,
+          heure_fin: program.heureFin,
+          genre: program.type as "Musique" | "Divertissement" | "Sport" | "Culture" | "Magazine" | "Actualité" | "Religion",
+          animateurs: [program.animateur],
           description: program.description || ''
         };
         

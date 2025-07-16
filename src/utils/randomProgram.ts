@@ -1,30 +1,35 @@
 
-import { collection, getDocs, limit, query } from 'firebase/firestore';
+import { collection, getDocs } from 'firebase/firestore';
 import { db } from '@/config/firebase';
+
+interface UserData {
+  id: string;
+  radioSlug?: string;
+  radioName?: string;
+}
 
 export const getRandomRadioSlug = async (): Promise<string> => {
   try {
-    const usersRef = collection(db, 'users');
-    const usersQuery = query(usersRef, limit(100));
-    const snapshot = await getDocs(usersQuery);
+    const usersCollection = collection(db, 'users');
+    const usersSnapshot = await getDocs(usersCollection);
     
-    if (snapshot.empty) {
+    if (usersSnapshot.empty) {
       return 'demo-radio';
     }
     
-    const users = snapshot.docs.map(doc => ({ 
-      id: doc.id, 
-      ...doc.data() 
-    }));
+    const users = usersSnapshot.docs.map(doc => ({
+      id: doc.id,
+      ...doc.data()
+    })) as UserData[];
     
-    const usersWithRadioSlug = users.filter(user => user.radioSlug);
+    const usersWithSlug = users.filter(user => user.radioSlug);
     
-    if (usersWithRadioSlug.length === 0) {
+    if (usersWithSlug.length === 0) {
       return 'demo-radio';
     }
     
-    const randomIndex = Math.floor(Math.random() * usersWithRadioSlug.length);
-    return usersWithRadioSlug[randomIndex].radioSlug;
+    const randomUser = usersWithSlug[Math.floor(Math.random() * usersWithSlug.length)];
+    return randomUser.radioSlug || 'demo-radio';
   } catch (error) {
     console.error('Error fetching random radio slug:', error);
     return 'demo-radio';

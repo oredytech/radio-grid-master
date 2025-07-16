@@ -90,10 +90,12 @@ const Index = () => {
         {/* Header */}
         <div className="text-center space-y-4">
           <div className="flex justify-center">
-            <div className="relative">
-              <Radio className="h-12 w-12 sm:h-16 sm:w-16 text-primary animate-pulse" />
-              <div className="absolute -top-1 -right-1 h-3 w-3 sm:h-4 sm:w-4 bg-red-500 rounded-full animate-pulse"></div>
-            </div>
+            <Link to="/">
+              <div className="relative cursor-pointer">
+                <Radio className="h-12 w-12 sm:h-16 sm:w-16 text-primary animate-pulse" />
+                <div className="absolute -top-1 -right-1 h-3 w-3 sm:h-4 sm:w-4 bg-red-500 rounded-full animate-pulse"></div>
+              </div>
+            </Link>
           </div>
           <div>
             <h1 className="text-2xl sm:text-4xl font-bold bg-gradient-to-r from-primary to-accent bg-clip-text text-transparent">

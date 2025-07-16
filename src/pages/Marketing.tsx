@@ -116,10 +116,10 @@ const Marketing = () => {
             <span className="text-xl font-bold">Radio Programmer</span>
           </div>
           <div className="flex items-center space-x-4">
-            <Link to="/">
+            <Link to="/login">
               <Button variant="ghost">Connexion</Button>
             </Link>
-            <Link to="/">
+            <Link to="/login">
               <Button>Commencer</Button>
             </Link>
           </div>
@@ -144,7 +144,7 @@ const Marketing = () => {
           </p>
           
           <div className="flex flex-col sm:flex-row gap-4 justify-center">
-            <Link to="/">
+            <Link to="/login">
               <Button size="lg" className="bg-gradient-to-r from-primary to-accent hover:from-primary/90 hover:to-accent/90">
                 Essayer gratuitement
               </Button>
@@ -271,7 +271,7 @@ const Marketing = () => {
               Rejoignez des centaines de stations radio qui ont déjà fait le choix de l'innovation
             </p>
             <div className="flex flex-col sm:flex-row gap-4 justify-center">
-              <Link to="/">
+              <Link to="/login">
                 <Button size="lg" variant="secondary">
                   Essai gratuit 14 jours
                 </Button>

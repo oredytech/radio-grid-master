@@ -75,7 +75,7 @@ export const ProgramTable = ({ programs }: { programs: Program[] }) => {
 
   const filteredPrograms = sortedPrograms.filter(program => {
     const dayMatch = filterDay === 'all' || program.jour === filterDay;
-    const typeMatch = filterType === 'all' || program.type === filterType;
+    const typeMatch = filterType === 'all' || program.genre === filterType;
     return dayMatch && typeMatch;
   });
 
@@ -208,27 +208,27 @@ export const ProgramTable = ({ programs }: { programs: Program[] }) => {
                   <span>{sortConfig.direction === 'asc' ? ' ▲' : ' ▼'}</span>
                 )}
               </TableHead>
-              <TableHead onClick={() => handleSort('heureDebut')} className="cursor-pointer">
+              <TableHead onClick={() => handleSort('heure_debut')} className="cursor-pointer">
                 Début
-                {sortConfig.key === 'heureDebut' && (
+                {sortConfig.key === 'heure_debut' && (
                   <span>{sortConfig.direction === 'asc' ? ' ▲' : ' ▼'}</span>
                 )}
               </TableHead>
-              <TableHead onClick={() => handleSort('heureFin')} className="cursor-pointer">
+              <TableHead onClick={() => handleSort('heure_fin')} className="cursor-pointer">
                 Fin
-                {sortConfig.key === 'heureFin' && (
+                {sortConfig.key === 'heure_fin' && (
                   <span>{sortConfig.direction === 'asc' ? ' ▲' : ' ▼'}</span>
                 )}
               </TableHead>
-              <TableHead onClick={() => handleSort('type')} className="cursor-pointer">
+              <TableHead onClick={() => handleSort('genre')} className="cursor-pointer">
                 Type
-                {sortConfig.key === 'type' && (
+                {sortConfig.key === 'genre' && (
                   <span>{sortConfig.direction === 'asc' ? ' ▲' : ' ▼'}</span>
                 )}
               </TableHead>
-              <TableHead onClick={() => handleSort('animateur')} className="cursor-pointer">
+              <TableHead onClick={() => handleSort('animateurs')} className="cursor-pointer">
                 Animateur
-                {sortConfig.key === 'animateur' && (
+                {sortConfig.key === 'animateurs' && (
                   <span>{sortConfig.direction === 'asc' ? ' ▲' : ' ▼'}</span>
                 )}
               </TableHead>
@@ -240,10 +240,10 @@ export const ProgramTable = ({ programs }: { programs: Program[] }) => {
               <TableRow key={program.id}>
                 <TableCell>{program.titre}</TableCell>
                 <TableCell>{program.jour}</TableCell>
-                <TableCell>{program.heureDebut}</TableCell>
-                <TableCell>{program.heureFin}</TableCell>
-                <TableCell>{program.type}</TableCell>
-                <TableCell>{program.animateur}</TableCell>
+                <TableCell>{program.heure_debut}</TableCell>
+                <TableCell>{program.heure_fin}</TableCell>
+                <TableCell>{program.genre}</TableCell>
+                <TableCell>{Array.isArray(program.animateurs) ? program.animateurs.join(', ') : program.animateurs}</TableCell>
                 <TableCell className="text-right">
                   <DropdownMenu>
                     <DropdownMenuTrigger asChild>
