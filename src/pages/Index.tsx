@@ -8,6 +8,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Radio, Mail, Lock, Eye, EyeOff, User, Building, Headphones } from 'lucide-react';
 import { useAuth } from '@/contexts/AuthContext';
 import { toast } from 'sonner';
+import { getRandomRadioSlug } from '@/utils/randomProgram';
 
 const Index = () => {
   const { user, signIn, signUp, loading } = useAuth();
@@ -304,9 +305,15 @@ const Index = () => {
           <p className="text-sm text-muted-foreground">
             Voulez-vous voir un exemple de programmation ?
           </p>
-          <Link to="/full-program" className="text-sm text-primary hover:text-accent transition-colors font-medium">
+          <button
+            onClick={async () => {
+              const randomSlug = await getRandomRadioSlug();
+              window.location.href = `/${randomSlug}/full-programme`;
+            }}
+            className="text-sm text-primary hover:text-accent transition-colors font-medium cursor-pointer bg-transparent border-none underline"
+          >
             Voir la grille complète
-          </Link>
+          </button>
         </div>
 
         {/* Footer */}

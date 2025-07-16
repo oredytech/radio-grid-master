@@ -1,282 +1,269 @@
 
 import { useState } from 'react';
 import { Button } from '@/components/ui/button';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
-import { Upload, FileSpreadsheet, AlertCircle, CheckCircle } from 'lucide-react';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { Badge } from '@/components/ui/badge';
+import { Upload, FileText, Check, X, AlertCircle } from 'lucide-react';
+import { useAuth } from '@/contexts/AuthContext';
+import { programsService } from '@/services/firebaseService';
+import { Program } from '@/types/program';
 import { toast } from 'sonner';
 import * as XLSX from 'xlsx';
-import { Program } from '@/types/program';
-import { programsService } from '@/services/firebaseService';
-import { useAuth } from '@/contexts/AuthContext';
 
 interface ImportedProgram {
   nom: string;
+  description: string;
   jour: string;
   heure_debut: string;
   heure_fin: string;
-  animateurs: string;
   categorie: string;
-  description: string;
+  animateurs: string[];
+  status: 'valid' | 'invalid' | 'duplicate';
+  error?: string;
 }
 
-const ProgramImport = () => {
-  const [isImporting, setIsImporting] = useState(false);
-  const [importedData, setImportedData] = useState<ImportedProgram[]>([]);
-  const [showPreview, setShowPreview] = useState(false);
+const ProgramImport = ({ onImportSuccess }: { onImportSuccess: () => void }) => {
   const { user } = useAuth();
+  const [file, setFile] = useState<File | null>(null);
+  const [importedPrograms, setImportedPrograms] = useState<ImportedProgram[]>([]);
+  const [isProcessing, setIsProcessing] = useState(false);
+  const [showPreview, setShowPreview] = useState(false);
 
-  const validateTimeFormat = (time: string): boolean => {
-    const timeRegex = /^([0-1]?[0-9]|2[0-3]):[0-5][0-9]$/;
-    return timeRegex.test(time);
-  };
-
-  const validateDay = (day: string): boolean => {
+  const validateProgram = (program: any): { isValid: boolean; error?: string } => {
+    const requiredFields = ['nom', 'description', 'jour', 'heure_debut', 'heure_fin', 'categorie'];
     const validDays = ['Lundi', 'Mardi', 'Mercredi', 'Jeudi', 'Vendredi', 'Samedi', 'Dimanche'];
-    return validDays.includes(day);
-  };
+    const validCategories = ['Informations', 'Musique', 'Divertissement', 'Sport', 'Culture', 'Éducation', 'Religieux'];
 
-  const validateCategory = (category: string): boolean => {
-    const validCategories = ['Magazine', 'Musique', 'Sport', 'Actualité', 'Culture', 'Religion', 'Divertissement'];
-    return validCategories.includes(category);
+    for (const field of requiredFields) {
+      if (!program[field] || program[field].toString().trim() === '') {
+        return { isValid: false, error: `Champ manquant: ${field}` };
+      }
+    }
+
+    if (!validDays.includes(program.jour)) {
+      return { isValid: false, error: 'Jour invalide' };
+    }
+
+    if (!validCategories.includes(program.categorie)) {
+      return { isValid: false, error: 'Catégorie invalide' };
+    }
+
+    const timeRegex = /^([0-1]?[0-9]|2[0-3]):[0-5][0-9]$/;
+    if (!timeRegex.test(program.heure_debut) || !timeRegex.test(program.heure_fin)) {
+      return { isValid: false, error: 'Format d\'heure invalide (HH:MM)' };
+    }
+
+    return { isValid: true };
   };
 
   const handleFileUpload = (event: React.ChangeEvent<HTMLInputElement>) => {
-    const file = event.target.files?.[0];
-    if (!file) return;
+    const selectedFile = event.target.files?.[0];
+    if (!selectedFile) return;
 
-    const reader = new FileReader();
-    reader.onload = (e) => {
-      try {
-        const data = new Uint8Array(e.target?.result as ArrayBuffer);
-        const workbook = XLSX.read(data, { type: 'array' });
-        const sheetName = workbook.SheetNames[0];
-        const worksheet = workbook.Sheets[sheetName];
-        const jsonData = XLSX.utils.sheet_to_json(worksheet);
-
-        const programs: ImportedProgram[] = jsonData.map((row: any) => ({
-          nom: row['Programme'] || row['Nom'] || row['programme'] || row['nom'] || '',
-          jour: row['Jour'] || row['jour'] || '',
-          heure_debut: row['Heure Début'] || row['Heure_Debut'] || row['heure_debut'] || row['Début'] || '',
-          heure_fin: row['Heure Fin'] || row['Heure_Fin'] || row['heure_fin'] || row['Fin'] || '',
-          animateurs: row['Animateurs'] || row['animateurs'] || row['Animateur'] || row['animateur'] || '',
-          categorie: row['Catégorie'] || row['Categorie'] || row['categorie'] || row['Category'] || '',
-          description: row['Description'] || row['description'] || ''
-        }));
-
-        // Validation des données
-        const validPrograms = programs.filter(program => {
-          return program.nom && 
-                 validateDay(program.jour) && 
-                 validateTimeFormat(program.heure_debut) && 
-                 validateTimeFormat(program.heure_fin) &&
-                 validateCategory(program.categorie);
-        });
-
-        if (validPrograms.length === 0) {
-          toast.error('Aucune donnée valide trouvée dans le fichier');
-          return;
-        }
-
-        if (validPrograms.length < programs.length) {
-          toast.warning(`${programs.length - validPrograms.length} lignes ignorées (données invalides)`);
-        }
-
-        setImportedData(validPrograms);
-        setShowPreview(true);
-        toast.success(`${validPrograms.length} programmes trouvés dans le fichier`);
-
-      } catch (error) {
-        console.error('Erreur lors de la lecture du fichier:', error);
-        toast.error('Erreur lors de la lecture du fichier');
-      }
-    };
-
-    reader.readAsArrayBuffer(file);
-    event.target.value = '';
+    setFile(selectedFile);
+    processFile(selectedFile);
   };
 
-  const handleImport = async () => {
-    if (!user?.uid || importedData.length === 0) return;
-
-    setIsImporting(true);
+  const processFile = async (file: File) => {
+    setIsProcessing(true);
     try {
-      let successCount = 0;
-      let errorCount = 0;
+      const buffer = await file.arrayBuffer();
+      const workbook = XLSX.read(buffer, { type: 'array' });
+      const sheetName = workbook.SheetNames[0];
+      const worksheet = workbook.Sheets[sheetName];
+      const jsonData = XLSX.utils.sheet_to_json(worksheet);
 
-      for (const programData of importedData) {
-        try {
-          const program: Omit<Program, 'id'> = {
-            nom: programData.nom,
-            jour: programData.jour as any,
-            heure_debut: programData.heure_debut,
-            heure_fin: programData.heure_fin,
-            animateurs: programData.animateurs ? programData.animateurs.split(',').map(a => a.trim()) : [],
-            categorie: programData.categorie as any,
-            description: programData.description,
-            statut: 'En cours',
-            date_creation: new Date().toISOString(),
-            date_modification: new Date().toISOString(),
-            userId: user.uid
-          };
+      const processedPrograms: ImportedProgram[] = jsonData.map((row: any) => {
+        const program = {
+          nom: row.nom || row.Nom || row.name || row.Name || '',
+          description: row.description || row.Description || '',
+          jour: row.jour || row.Jour || row.day || row.Day || '',
+          heure_debut: row.heure_debut || row['Heure début'] || row.start_time || row['Start Time'] || '',
+          heure_fin: row.heure_fin || row['Heure fin'] || row.end_time || row['End Time'] || '',
+          categorie: row.categorie || row.Catégorie || row.category || row.Category || '',
+          animateurs: typeof row.animateurs === 'string' 
+            ? row.animateurs.split(',').map((a: string) => a.trim())
+            : row.animateurs || []
+        };
 
-          await programsService.create(program, user.uid);
-          successCount++;
-        } catch (error) {
-          console.error('Erreur lors de la création du programme:', error);
-          errorCount++;
-        }
-      }
+        const validation = validateProgram(program);
+        return {
+          ...program,
+          status: validation.isValid ? 'valid' as const : 'invalid' as const,
+          error: validation.error
+        };
+      });
 
-      if (successCount > 0) {
-        toast.success(`${successCount} programmes importés avec succès`);
-      }
-      if (errorCount > 0) {
-        toast.error(`${errorCount} programmes n'ont pas pu être importés`);
-      }
-
-      setShowPreview(false);
-      setImportedData([]);
-      
+      setImportedPrograms(processedPrograms);
+      setShowPreview(true);
     } catch (error) {
-      console.error('Erreur lors de l\'importation:', error);
-      toast.error('Erreur lors de l\'importation des programmes');
+      console.error('Erreur lors du traitement du fichier:', error);
+      toast.error('Erreur lors du traitement du fichier');
     } finally {
-      setIsImporting(false);
+      setIsProcessing(false);
     }
   };
 
-  const downloadTemplate = () => {
-    const template = [
-      {
-        'Programme': 'Exemple Programme',
-        'Jour': 'Lundi',
-        'Heure Début': '08:00',
-        'Heure Fin': '10:00',
-        'Animateurs': 'Animateur 1, Animateur 2',
-        'Catégorie': 'Magazine',
-        'Description': 'Description du programme'
-      }
-    ];
+  const handleImport = async () => {
+    if (!user?.id) {
+      toast.error('Utilisateur non connecté');
+      return;
+    }
 
-    const ws = XLSX.utils.json_to_sheet(template);
-    const wb = XLSX.utils.book_new();
-    XLSX.utils.book_append_sheet(wb, ws, 'Template');
-    XLSX.writeFile(wb, 'template_programmes.xlsx');
-    toast.success('Modèle téléchargé avec succès');
+    const validPrograms = importedPrograms.filter(p => p.status === 'valid');
+    if (validPrograms.length === 0) {
+      toast.error('Aucun programme valide à importer');
+      return;
+    }
+
+    setIsProcessing(true);
+    try {
+      let successCount = 0;
+      for (const program of validPrograms) {
+        const programData: Omit<Program, 'id'> = {
+          nom: program.nom,
+          description: program.description,
+          jour: program.jour,
+          heure_debut: program.heure_debut,
+          heure_fin: program.heure_fin,
+          categorie: program.categorie,
+          animateurs: program.animateurs,
+          userId: user.id,
+          date_creation: new Date().toISOString(),
+          date_modification: new Date().toISOString()
+        };
+
+        await programsService.create(programData, user.id);
+        successCount++;
+      }
+
+      toast.success(`${successCount} programmes importés avec succès`);
+      onImportSuccess();
+      setFile(null);
+      setImportedPrograms([]);
+      setShowPreview(false);
+    } catch (error) {
+      console.error('Erreur lors de l\'importation:', error);
+      toast.error('Erreur lors de l\'importation');
+    } finally {
+      setIsProcessing(false);
+    }
+  };
+
+  const getStatusIcon = (status: string) => {
+    switch (status) {
+      case 'valid': return <Check className="h-4 w-4 text-green-500" />;
+      case 'invalid': return <X className="h-4 w-4 text-red-500" />;
+      case 'duplicate': return <AlertCircle className="h-4 w-4 text-yellow-500" />;
+      default: return null;
+    }
+  };
+
+  const getStatusColor = (status: string) => {
+    switch (status) {
+      case 'valid': return 'bg-green-100 text-green-800';
+      case 'invalid': return 'bg-red-100 text-red-800';
+      case 'duplicate': return 'bg-yellow-100 text-yellow-800';
+      default: return 'bg-gray-100 text-gray-800';
+    }
   };
 
   return (
-    <div className="space-y-6">
-      <Card>
-        <CardHeader>
-          <CardTitle className="flex items-center space-x-2">
-            <Upload className="h-5 w-5" />
-            <span>Importer des programmes</span>
-          </CardTitle>
-        </CardHeader>
-        <CardContent className="space-y-4">
-          <div className="space-y-2">
-            <Label htmlFor="file-upload">Fichier CSV ou Excel</Label>
-            <Input
-              id="file-upload"
-              type="file"
-              accept=".csv,.xlsx,.xls"
-              onChange={handleFileUpload}
-              className="cursor-pointer"
-            />
-            <p className="text-sm text-muted-foreground">
-              Formats acceptés: CSV, Excel (.xlsx, .xls)
-            </p>
-          </div>
+    <Card>
+      <CardHeader>
+        <CardTitle className="flex items-center space-x-2">
+          <Upload className="h-5 w-5" />
+          <span>Importer des programmes</span>
+        </CardTitle>
+        <CardDescription>
+          Importez vos programmes depuis un fichier CSV ou Excel
+        </CardDescription>
+      </CardHeader>
+      <CardContent className="space-y-4">
+        <div className="space-y-2">
+          <Input
+            type="file"
+            accept=".csv,.xlsx,.xls"
+            onChange={handleFileUpload}
+            disabled={isProcessing}
+          />
+          <p className="text-sm text-muted-foreground">
+            Formats acceptés: CSV, Excel (.xlsx, .xls)
+          </p>
+        </div>
 
-          <div className="flex flex-col space-y-2 sm:flex-row sm:space-y-0 sm:space-x-2">
-            <Button
-              onClick={downloadTemplate}
-              variant="outline"
-              className="flex items-center space-x-2"
-            >
-              <FileSpreadsheet className="h-4 w-4" />
-              <span>Télécharger le modèle</span>
-            </Button>
+        {file && (
+          <div className="flex items-center space-x-2 p-3 bg-muted rounded-md">
+            <FileText className="h-4 w-4" />
+            <span className="text-sm">{file.name}</span>
+            <Badge variant="outline">{file.size} bytes</Badge>
           </div>
+        )}
 
-          <div className="bg-muted/50 p-4 rounded-lg space-y-2">
-            <h4 className="font-semibold text-sm">Format attendu :</h4>
-            <ul className="text-sm text-muted-foreground space-y-1">
-              <li>• <strong>Programme</strong> : Nom du programme</li>
-              <li>• <strong>Jour</strong> : Lundi, Mardi, etc.</li>
-              <li>• <strong>Heure Début</strong> : Format HH:MM (ex: 08:30)</li>
-              <li>• <strong>Heure Fin</strong> : Format HH:MM (ex: 10:00)</li>
-              <li>• <strong>Animateurs</strong> : Séparés par des virgules</li>
-              <li>• <strong>Catégorie</strong> : Magazine, Musique, Sport, etc.</li>
-              <li>• <strong>Description</strong> : Description du programme</li>
-            </ul>
-          </div>
-        </CardContent>
-      </Card>
-
-      {showPreview && (
-        <Card>
-          <CardHeader>
-            <CardTitle className="flex items-center space-x-2">
-              <CheckCircle className="h-5 w-5 text-green-600" />
-              <span>Aperçu des programmes à importer ({importedData.length})</span>
-            </CardTitle>
-          </CardHeader>
-          <CardContent className="space-y-4">
-            <div className="max-h-64 overflow-y-auto border rounded-lg">
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-2 p-4">
-                {importedData.slice(0, 10).map((program, index) => (
-                  <div key={index} className="bg-muted/30 p-3 rounded text-sm">
-                    <div className="font-semibold">{program.nom}</div>
-                    <div className="text-muted-foreground">
-                      {program.jour} • {program.heure_debut}-{program.heure_fin}
-                    </div>
-                    <div className="text-xs text-muted-foreground">{program.categorie}</div>
-                  </div>
-                ))}
+        {showPreview && (
+          <div className="space-y-4">
+            <div className="flex items-center justify-between">
+              <h3 className="text-lg font-semibold">Aperçu des programmes</h3>
+              <div className="flex space-x-2">
+                <Badge variant="outline" className="bg-green-100 text-green-800">
+                  {importedPrograms.filter(p => p.status === 'valid').length} valides
+                </Badge>
+                <Badge variant="outline" className="bg-red-100 text-red-800">
+                  {importedPrograms.filter(p => p.status === 'invalid').length} invalides
+                </Badge>
               </div>
-              {importedData.length > 10 && (
-                <div className="text-center p-2 text-sm text-muted-foreground border-t">
-                  ... et {importedData.length - 10} autres programmes
-                </div>
-              )}
             </div>
 
-            <div className="flex flex-col space-y-2 sm:flex-row sm:space-y-0 sm:space-x-2">
+            <div className="max-h-96 overflow-y-auto space-y-2">
+              {importedPrograms.map((program, index) => (
+                <div
+                  key={index}
+                  className={`p-3 rounded-md border ${
+                    program.status === 'valid' ? 'border-green-200' : 'border-red-200'
+                  }`}
+                >
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center space-x-2">
+                      {getStatusIcon(program.status)}
+                      <span className="font-medium">{program.nom}</span>
+                      <Badge className={getStatusColor(program.status)}>
+                        {program.status}
+                      </Badge>
+                    </div>
+                    <div className="text-sm text-muted-foreground">
+                      {program.jour} {program.heure_debut}-{program.heure_fin}
+                    </div>
+                  </div>
+                  {program.error && (
+                    <p className="text-sm text-red-500 mt-1">{program.error}</p>
+                  )}
+                </div>
+              ))}
+            </div>
+
+            <div className="flex justify-end space-x-2">
               <Button
-                onClick={handleImport}
-                disabled={isImporting}
-                className="flex items-center space-x-2"
-              >
-                {isImporting ? (
-                  <>
-                    <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white"></div>
-                    <span>Importation...</span>
-                  </>
-                ) : (
-                  <>
-                    <Upload className="h-4 w-4" />
-                    <span>Importer {importedData.length} programmes</span>
-                  </>
-                )}
-              </Button>
-              <Button
+                variant="outline"
                 onClick={() => {
                   setShowPreview(false);
-                  setImportedData([]);
+                  setFile(null);
+                  setImportedPrograms([]);
                 }}
-                variant="outline"
               >
                 Annuler
               </Button>
+              <Button
+                onClick={handleImport}
+                disabled={isProcessing || importedPrograms.filter(p => p.status === 'valid').length === 0}
+              >
+                {isProcessing ? 'Importation...' : 'Importer'}
+              </Button>
             </div>
-          </CardContent>
-        </Card>
-      )}
-    </div>
+          </div>
+        )}
+      </CardContent>
+    </Card>
   );
 };
 
