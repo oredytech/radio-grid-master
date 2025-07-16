@@ -14,6 +14,7 @@ import Animateurs from "./pages/Animateurs";
 import FullProgram from "./pages/FullProgram";
 import FullProgramView from "./pages/FullProgramView";
 import StudioDisplay from "./pages/StudioDisplay";
+import Marketing from "./pages/Marketing";
 import NotFound from "./pages/NotFound";
 import { AuthProvider } from "./contexts/AuthContext";
 
@@ -28,6 +29,7 @@ const App = () => (
         <BrowserRouter>
           <Routes>
             <Route path="/" element={<Index />} />
+            <Route path="/marketing" element={<Marketing />} />
             <Route path="/dashboard" element={<Dashboard />} />
             <Route path="/schedule" element={<Schedule />} />
             <Route path="/programs" element={<Programs />} />

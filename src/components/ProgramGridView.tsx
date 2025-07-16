@@ -1,67 +1,67 @@
-import React from 'react';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Badge } from '@/components/ui/badge';
-import { Calendar, Clock } from 'lucide-react';
+
+import { useState, useEffect } from 'react';
+import { ProgramCard } from './ProgramCard';
 import { Program } from '@/types/program';
-import ProgramCard from './ProgramCard';
+import { programsService } from '@/services/firebaseService';
+import { useAuth } from '@/contexts/AuthContext';
 
 interface ProgramGridViewProps {
   programs: Program[];
-  animateurs: any[]; // Replace 'any' with the actual type of animateurs if available
-  onDelete: (id: string) => Promise<void>;
+  animateurs: any[];
+  onDelete: (programId: string) => Promise<void>;
 }
 
-const ProgramGridView = ({ programs, animateurs, onDelete }: ProgramGridViewProps) => {
-  const days = ['Lundi', 'Mardi', 'Mercredi', 'Jeudi', 'Vendredi', 'Samedi', 'Dimanche'];
+export const ProgramGridView = ({ programs, animateurs, onDelete }: ProgramGridViewProps) => {
+  const [localPrograms, setLocalPrograms] = useState<Program[]>(programs);
+  const { user } = useAuth();
 
-  const getProgramsForDay = (day: string) => {
-    return programs.filter(program => program.jour === day)
-      .sort((a, b) => a.heure_debut.localeCompare(b.heure_debut));
-  };
+  useEffect(() => {
+    setLocalPrograms(programs);
+  }, [programs]);
 
   const handleDelete = async (programId: string) => {
-    await onDelete(programId);
+    if (!user) return;
+    
+    try {
+      await onDelete(programId);
+      setLocalPrograms(prev => prev.filter(p => p.id !== programId));
+    } catch (error) {
+      console.error('Error deleting program:', error);
+    }
   };
 
+  const refreshPrograms = async () => {
+    if (!user) return;
+    
+    try {
+      const updatedPrograms = await programsService.getAll(user.id);
+      setLocalPrograms(updatedPrograms);
+    } catch (error) {
+      console.error('Error refreshing programs:', error);
+    }
+  };
+
+  useEffect(() => {
+    refreshPrograms();
+  }, [user]);
+
+  if (localPrograms.length === 0) {
+    return (
+      <div className="text-center py-8 text-muted-foreground">
+        Aucun programme trouvé. Commencez par ajouter votre premier programme.
+      </div>
+    );
+  }
+
   return (
-    <div className="grid grid-cols-1 lg:grid-cols-2 xl:grid-cols-3 gap-6">
-      {days.map((day) => {
-        const dayPrograms = getProgramsForDay(day);
-        return (
-          <Card key={day} className="overflow-hidden">
-            <CardHeader className="pb-4">
-              <CardTitle className="flex items-center justify-between">
-                <div className="flex items-center space-x-2">
-                  <Calendar className="h-5 w-5" />
-                  <span>{day}</span>
-                </div>
-                <Badge variant="outline" className="text-xs">
-                  {dayPrograms.length} programmes
-                </Badge>
-              </CardTitle>
-            </CardHeader>
-            <CardContent className="space-y-3">
-              {dayPrograms.length === 0 ? (
-                <div className="text-center py-8 text-muted-foreground">
-                  <Clock className="h-8 w-8 mx-auto mb-2 opacity-50" />
-                  <p className="text-sm">Aucun programme</p>
-                </div>
-              ) : (
-                dayPrograms.map((program) => (
-                  <ProgramCard
-                    key={program.id}
-                    program={program}
-                    animateurs={animateurs}
-                    onDelete={() => handleDelete(program.id)}
-                  />
-                ))
-              )}
-            </CardContent>
-          </Card>
-        );
-      })}
+    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+      {localPrograms.map((program) => (
+        <ProgramCard
+          key={program.id}
+          program={program}
+          onDelete={() => handleDelete(program.id)}
+        />
+      ))}
     </div>
   );
 };
-
-export default ProgramGridView;
