@@ -1,40 +1,47 @@
 
 import { useState, useEffect } from 'react';
-import { Navigate, useNavigate } from 'react-router-dom';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Link } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Badge } from '@/components/ui/badge';
-import { Plus, Search, Filter, Users, Clock } from 'lucide-react';
-import { useAuth } from '@/contexts/AuthContext';
-import Navigation from '@/components/Navigation';
-import ProgramActions from '@/components/ProgramActions';
-import { Program, CATEGORIES_COLORS } from '@/types/program';
+import { Plus, Search, Calendar, Upload } from 'lucide-react';
+import { Program, CATEGORIES, CATEGORIES_COLORS } from '@/types/program';
 import { programsService } from '@/services/firebaseService';
-import { formatDuration } from '@/utils/timeUtils';
-import { getRadioSlugFromUser } from '@/utils/slugUtils';
+import { useAuth } from '@/contexts/AuthContext';
 import { toast } from 'sonner';
+import ProgramCard from '@/components/ProgramCard';
+import ProgramImport from '@/components/ProgramImport';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 
 const Programs = () => {
-  const { user } = useAuth();
-  const navigate = useNavigate();
-  const [searchTerm, setSearchTerm] = useState('');
-  const [selectedCategory, setSelectedCategory] = useState<string>('');
   const [programs, setPrograms] = useState<Program[]>([]);
+  const [filteredPrograms, setFilteredPrograms] = useState<Program[]>([]);
+  const [searchTerm, setSearchTerm] = useState('');
+  const [selectedCategory, setSelectedCategory] = useState<string>('all');
+  const [selectedDay, setSelectedDay] = useState<string>('all');
   const [isLoading, setIsLoading] = useState(true);
+  const { user } = useAuth();
+
+  const days = ['Lundi', 'Mardi', 'Mercredi', 'Jeudi', 'Vendredi', 'Samedi', 'Dimanche'];
 
   useEffect(() => {
-    if (user) {
+    if (user?.uid) {
       loadPrograms();
     }
   }, [user]);
 
+  useEffect(() => {
+    filterPrograms();
+  }, [programs, searchTerm, selectedCategory, selectedDay]);
+
   const loadPrograms = async () => {
-    if (!user) return;
+    if (!user?.uid) return;
     
     try {
       setIsLoading(true);
-      const programsData = await programsService.getAll(user.id);
+      const programsData = await programsService.getAll(user.uid);
       setPrograms(programsData);
     } catch (error) {
       console.error('Erreur lors du chargement des programmes:', error);
@@ -44,31 +51,36 @@ const Programs = () => {
     }
   };
 
-  if (!user) {
-    return <Navigate to="/" replace />;
-  }
+  const filterPrograms = () => {
+    let filtered = programs;
 
-  const categories = Array.from(new Set(programs.map(p => p.categorie)));
-
-  const filteredPrograms = programs.filter(program => {
-    const matchesSearch = program.nom.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                         program.animateurs.some(a => a.toLowerCase().includes(searchTerm.toLowerCase()));
-    const matchesCategory = !selectedCategory || program.categorie === selectedCategory;
-    return matchesSearch && matchesCategory;
-  });
-
-  const handleEdit = (program: Program) => {
-    navigate(`/programs/edit/${program.id}`);
-  };
-
-  const handleDelete = async (programId: string) => {
-    if (!user || !confirm('Êtes-vous sûr de vouloir supprimer ce programme ?')) {
-      return;
+    if (searchTerm) {
+      filtered = filtered.filter(program =>
+        program.nom.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        program.animateurs.some(animateur => 
+          animateur.toLowerCase().includes(searchTerm.toLowerCase())
+        ) ||
+        program.description.toLowerCase().includes(searchTerm.toLowerCase())
+      );
     }
 
+    if (selectedCategory !== 'all') {
+      filtered = filtered.filter(program => program.categorie === selectedCategory);
+    }
+
+    if (selectedDay !== 'all') {
+      filtered = filtered.filter(program => program.jour === selectedDay);
+    }
+
+    setFilteredPrograms(filtered);
+  };
+
+  const handleDelete = async (id: string) => {
+    if (!user?.uid) return;
+    
     try {
-      await programsService.delete(programId, user.id);
-      setPrograms(prev => prev.filter(p => p.id !== programId));
+      await programsService.delete(id, user.uid);
+      await loadPrograms();
       toast.success('Programme supprimé avec succès');
     } catch (error) {
       console.error('Erreur lors de la suppression:', error);
@@ -76,24 +88,19 @@ const Programs = () => {
     }
   };
 
-  const handleViewFullProgram = () => {
-    if (user?.radioName) {
-      const slug = getRadioSlugFromUser(user.radioName);
-      navigate(`/${slug}/full-programme`);
-    } else {
-      toast.error('Nom de la radio non configuré');
-    }
-  };
-
-  const handleAddProgram = () => {
-    navigate('/programs/add');
+  const getProgramsByDay = (day: string) => {
+    return filteredPrograms
+      .filter(program => program.jour === day)
+      .sort((a, b) => a.heure_debut.localeCompare(b.heure_debut));
   };
 
   if (isLoading) {
     return (
-      <div className="min-h-screen bg-background">
-        <Navigation />
-        <div className="flex items-center justify-center min-h-[50vh]">
+      <div className="space-y-6">
+        <div className="flex items-center justify-between">
+          <h1 className="text-3xl font-bold">Programmes</h1>
+        </div>
+        <div className="flex items-center justify-center py-12">
           <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
         </div>
       </div>
@@ -101,180 +108,158 @@ const Programs = () => {
   }
 
   return (
-    <div className="min-h-screen bg-background">
-      <Navigation />
-      
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6 sm:py-8">
-        {/* Header */}
-        <div className="mb-6 sm:mb-8">
-          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
-            <div className="min-w-0">
-              <h1 className="text-2xl sm:text-3xl font-bold text-foreground truncate">Gestion des Programmes</h1>
-              <p className="text-muted-foreground mt-1 text-sm sm:text-base">
-                Créez, modifiez et organisez vos émissions
-              </p>
-            </div>
-            <div className="flex gap-2">
-              <Button 
-                onClick={handleViewFullProgram}
-                variant="outline"
-                className="flex-shrink-0"
-              >
-                <Search className="h-4 w-4 mr-2" />
-                <span className="hidden sm:inline">Voir Programme Complet</span>
-                <span className="sm:hidden">Programme</span>
-              </Button>
-              <Button 
-                onClick={handleAddProgram}
-                className="bg-gradient-to-r from-primary to-accent hover:from-primary/90 hover:to-accent/90 flex-shrink-0"
-              >
-                <Plus className="h-4 w-4 mr-2" />
-                <span className="hidden sm:inline">Nouveau Programme</span>
-                <span className="sm:hidden">Nouveau</span>
-              </Button>
-            </div>
-          </div>
-        </div>
+    <div className="space-y-6">
+      <div className="flex flex-col space-y-4 sm:flex-row sm:items-center sm:justify-between sm:space-y-0">
+        <h1 className="text-2xl sm:text-3xl font-bold">Programmes</h1>
+        <Link to="/add-program">
+          <Button className="flex items-center space-x-2 w-full sm:w-auto">
+            <Plus className="h-4 w-4" />
+            <span>Nouveau programme</span>
+          </Button>
+        </Link>
+      </div>
 
-        {/* Filters */}
-        <Card className="mb-6 sm:mb-8">
-          <CardHeader>
-            <CardTitle className="flex items-center space-x-2 text-lg sm:text-xl">
-              <Filter className="h-4 w-4 sm:h-5 sm:w-5" />
-              <span>Filtres et Recherche</span>
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="flex flex-col gap-4">
-              <div className="flex-1">
-                <div className="relative">
-                  <Search className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
-                  <Input
-                    placeholder="Rechercher par nom d'émission ou animateur..."
-                    value={searchTerm}
-                    onChange={(e) => setSearchTerm(e.target.value)}
-                    className="pl-10"
-                  />
+      <Tabs defaultValue="list" className="w-full">
+        <TabsList className="grid w-full grid-cols-2">
+          <TabsTrigger value="list" className="flex items-center space-x-2">
+            <Calendar className="h-4 w-4" />
+            <span>Liste des programmes</span>
+          </TabsTrigger>
+          <TabsTrigger value="import" className="flex items-center space-x-2">
+            <Upload className="h-4 w-4" />
+            <span>Importer</span>
+          </TabsTrigger>
+        </TabsList>
+
+        <TabsContent value="list" className="space-y-6">
+          {/* Filtres */}
+          <Card>
+            <CardHeader>
+              <CardTitle>Filtres</CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                <div className="space-y-2">
+                  <label className="text-sm font-medium">Recherche</label>
+                  <div className="relative">
+                    <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                    <Input
+                      placeholder="Rechercher un programme..."
+                      value={searchTerm}
+                      onChange={(e) => setSearchTerm(e.target.value)}
+                      className="pl-10"
+                    />
+                  </div>
+                </div>
+                
+                <div className="space-y-2">
+                  <label className="text-sm font-medium">Catégorie</label>
+                  <Select value={selectedCategory} onValueChange={setSelectedCategory}>
+                    <SelectTrigger>
+                      <SelectValue placeholder="Toutes les catégories" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="all">Toutes les catégories</SelectItem>
+                      {CATEGORIES.map((category) => (
+                        <SelectItem key={category} value={category}>
+                          {category}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+
+                <div className="space-y-2">
+                  <label className="text-sm font-medium">Jour</label>
+                  <Select value={selectedDay} onValueChange={setSelectedDay}>
+                    <SelectTrigger>
+                      <SelectValue placeholder="Tous les jours" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="all">Tous les jours</SelectItem>
+                      {days.map((day) => (
+                        <SelectItem key={day} value={day}>
+                          {day}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
                 </div>
               </div>
-              <div className="flex flex-wrap gap-2 overflow-x-auto pb-2">
-                <Button
-                  variant={!selectedCategory ? "default" : "outline"}
-                  size="sm"
-                  onClick={() => setSelectedCategory('')}
-                  className="flex-shrink-0"
-                >
-                  Toutes
-                </Button>
-                {categories.map((category) => (
-                  <Button
-                    key={category}
-                    variant={selectedCategory === category ? "default" : "outline"}
-                    size="sm"
-                    onClick={() => setSelectedCategory(category)}
-                    className="text-xs sm:text-sm flex-shrink-0"
-                  >
-                    {category}
-                  </Button>
-                ))}
-              </div>
-            </div>
-          </CardContent>
-        </Card>
 
-        {/* Programs List */}
-        <div className="space-y-4">
+              {(searchTerm || selectedCategory !== 'all' || selectedDay !== 'all') && (
+                <div className="flex items-center justify-between pt-2 border-t">
+                  <div className="flex items-center space-x-2">
+                    <span className="text-sm text-muted-foreground">
+                      {filteredPrograms.length} programme(s) trouvé(s)
+                    </span>
+                    {searchTerm && (
+                      <Badge variant="secondary">"{searchTerm}"</Badge>
+                    )}
+                    {selectedCategory !== 'all' && (
+                      <Badge variant="secondary">{selectedCategory}</Badge>
+                    )}
+                    {selectedDay !== 'all' && (
+                      <Badge variant="secondary">{selectedDay}</Badge>
+                    )}
+                  </div>
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    onClick={() => {
+                      setSearchTerm('');
+                      setSelectedCategory('all');
+                      setSelectedDay('all');
+                    }}
+                  >
+                    Effacer les filtres
+                  </Button>
+                </div>
+              )}
+            </CardContent>
+          </Card>
+
+          {/* Liste des programmes */}
           {filteredPrograms.length === 0 ? (
             <Card>
-              <CardContent className="py-8 sm:py-12">
-                <div className="text-center text-muted-foreground">
-                  <Search className="h-8 w-8 sm:h-12 sm:w-12 mx-auto mb-4 opacity-50" />
-                  <p className="text-base sm:text-lg font-medium">Aucun programme trouvé</p>
-                  <p className="text-xs sm:text-sm">Essayez de modifier vos critères de recherche</p>
-                </div>
+              <CardContent className="text-center py-12">
+                <Calendar className="h-16 w-16 mx-auto mb-4 text-muted-foreground opacity-50" />
+                <h3 className="text-xl font-semibold mb-2">
+                  {programs.length === 0 ? 'Aucun programme créé' : 'Aucun programme trouvé'}
+                </h3>
+                <p className="text-muted-foreground mb-4">
+                  {programs.length === 0 
+                    ? 'Commencez par créer votre premier programme' 
+                    : 'Essayez de modifier vos critères de recherche'
+                  }
+                </p>
+                {programs.length === 0 && (
+                  <Link to="/add-program">
+                    <Button>
+                      <Plus className="h-4 w-4 mr-2" />
+                      Créer un programme
+                    </Button>
+                  </Link>
+                )}
               </CardContent>
             </Card>
           ) : (
-            filteredPrograms.map((program) => {
-              const categoryGradient = CATEGORIES_COLORS[program.categorie];
-              
-              return (
-                <Card key={program.id} className="overflow-hidden hover:shadow-lg transition-all duration-300">
-                  <div className={`h-1 bg-gradient-to-r ${categoryGradient}`} />
-                  <CardContent className="p-4 sm:p-6">
-                    <div className="flex flex-col lg:flex-row lg:items-start lg:justify-between gap-4">
-                      <div className="flex-1 min-w-0">
-                        <div className="flex flex-col sm:flex-row sm:items-center gap-2 sm:gap-3 mb-3">
-                          <h3 className="text-lg sm:text-xl font-semibold truncate">{program.nom}</h3>
-                          <div className="flex flex-wrap gap-2">
-                            <Badge variant="secondary" className="text-xs">{program.categorie}</Badge>
-                            <Badge variant="outline" className="text-xs">{program.jour}</Badge>
-                          </div>
-                        </div>
-                        
-                        <p className="text-muted-foreground mb-4 text-sm sm:text-base line-clamp-2">
-                          {program.description}
-                        </p>
-                        
-                        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 sm:gap-4 text-xs sm:text-sm">
-                          <div className="flex items-center space-x-2 min-w-0">
-                            <Clock className="h-3 w-3 sm:h-4 sm:w-4 text-muted-foreground flex-shrink-0" />
-                            <span className="truncate">{program.heure_debut} - {program.heure_fin}</span>
-                            <Badge variant="outline" className="ml-2 text-xs flex-shrink-0">
-                              {formatDuration(program.heure_debut, program.heure_fin)}
-                            </Badge>
-                          </div>
-                          
-                          <div className="flex items-center space-x-2 min-w-0">
-                            <Users className="h-3 w-3 sm:h-4 sm:w-4 text-muted-foreground flex-shrink-0" />
-                            <span className="truncate">{program.animateurs.join(', ')}</span>
-                          </div>
-                          
-                          <div className="text-xs text-muted-foreground">
-                            Créé le {new Date(program.date_creation).toLocaleDateString('fr-FR')}
-                          </div>
-                        </div>
-                      </div>
-                      
-                      <ProgramActions
-                        program={program}
-                        onEdit={handleEdit}
-                        onDelete={handleDelete}
-                        onViewFull={handleViewFullProgram}
-                      />
-                    </div>
-                  </CardContent>
-                </Card>
-              );
-            })
-          )}
-        </div>
-
-        {/* Stats Footer */}
-        <Card className="mt-6 sm:mt-8">
-          <CardContent className="py-3 sm:py-4">
-            <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 text-xs sm:text-sm text-muted-foreground">
-              <span>{filteredPrograms.length} programme{filteredPrograms.length > 1 ? 's' : ''} affiché{filteredPrograms.length > 1 ? 's' : ''}</span>
-              <span>Total: {programs.length} programmes</span>
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+              {filteredPrograms.map((program) => (
+                <ProgramCard
+                  key={program.id}
+                  program={program}
+                  onDelete={() => handleDelete(program.id)}
+                />
+              ))}
             </div>
-          </CardContent>
-        </Card>
+          )}
+        </TabsContent>
 
-        {/* Footer */}
-        <div className="mt-8 pt-6 border-t border-border">
-          <p className="text-center text-xs sm:text-sm text-muted-foreground">
-            Fièrement conçu par{' '}
-            <a 
-              href="https://oredytech.com" 
-              target="_blank" 
-              rel="noopener noreferrer"
-              className="font-semibold text-primary hover:text-accent transition-colors"
-            >
-              Oredy TECHNOLOGIES
-            </a>
-          </p>
-        </div>
-      </div>
+        <TabsContent value="import">
+          <ProgramImport />
+        </TabsContent>
+      </Tabs>
     </div>
   );
 };

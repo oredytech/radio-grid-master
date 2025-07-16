@@ -56,29 +56,27 @@ const ProgramGridView = ({ programs }: ProgramGridViewProps) => {
       </CardHeader>
       <CardContent className="p-2 sm:p-6">
         <div className="overflow-x-auto">
-          <div className="min-w-[320px] sm:min-w-[640px] lg:min-w-[900px]">
+          <div className="min-w-[800px]">
             {/* En-tête des jours */}
             <div className="grid grid-cols-8 gap-1 mb-2">
-              <div className="p-1 sm:p-2 font-semibold text-center text-xs sm:text-sm bg-muted/20 rounded">
-                <span className="hidden sm:inline">Horaire</span>
-                <span className="sm:hidden">H.</span>
+              <div className="p-2 font-semibold text-center text-sm bg-muted/20 rounded">
+                Horaire
               </div>
               {days.map((day, index) => (
-                <div key={day} className="p-1 sm:p-2 font-semibold text-center text-xs sm:text-sm bg-muted/30 rounded">
-                  <span className="hidden sm:inline">{day}</span>
-                  <span className="sm:hidden">{shortDays[index]}</span>
+                <div key={day} className="p-2 font-semibold text-center text-sm bg-muted/30 rounded">
+                  <span className="hidden lg:inline">{day}</span>
+                  <span className="lg:hidden">{shortDays[index]}</span>
                 </div>
               ))}
             </div>
             
             {/* Grille des programmes */}
-            <div className="space-y-0.5 sm:space-y-1">
+            <div className="space-y-1">
               {timeSlots.map((timeSlot) => (
-                <div key={timeSlot} className="grid grid-cols-8 gap-0.5 sm:gap-1 min-h-[32px] sm:min-h-[48px]">
+                <div key={timeSlot} className="grid grid-cols-8 gap-1 min-h-[48px]">
                   {/* Colonne des heures */}
-                  <div className="p-1 sm:p-2 text-xs sm:text-sm font-mono bg-muted/20 rounded flex items-center justify-center">
-                    <span className="hidden sm:inline">{timeSlot}</span>
-                    <span className="sm:hidden">{timeSlot.split(':')[0]}h</span>
+                  <div className="p-2 text-sm font-mono bg-muted/20 rounded flex items-center justify-center">
+                    {timeSlot}
                   </div>
                   
                   {/* Colonnes des jours */}
@@ -88,7 +86,7 @@ const ProgramGridView = ({ programs }: ProgramGridViewProps) => {
                     
                     if (!program) {
                       return (
-                        <div key={`${day}-${timeSlot}`} className="border border-gray-200 rounded min-h-[30px] sm:min-h-[46px]">
+                        <div key={`${day}-${timeSlot}`} className="border border-gray-200 rounded min-h-[46px]">
                         </div>
                       );
                     }
@@ -107,25 +105,25 @@ const ProgramGridView = ({ programs }: ProgramGridViewProps) => {
                       <HoverCard key={`${day}-${timeSlot}`}>
                         <HoverCardTrigger asChild>
                           <div
-                            className={`bg-gradient-to-r ${categoryGradient} text-white rounded p-1 sm:p-2 cursor-pointer transition-all hover:shadow-md`}
+                            className={`bg-gradient-to-r ${categoryGradient} text-white rounded p-2 cursor-pointer transition-all hover:shadow-md`}
                             style={{
                               gridRow: `span ${duration}`,
-                              minHeight: `${duration * 32 + (duration - 1) * 2}px`
+                              minHeight: `${duration * 48 + (duration - 1) * 4}px`
                             }}
                           >
                             <div className="text-xs font-semibold truncate">
                               {program.nom}
                             </div>
-                            <div className="text-xs opacity-90 mt-0.5 sm:mt-1 hidden sm:block">
+                            <div className="text-xs opacity-90 mt-1">
                               {program.heure_debut.split(':')[0]}h - {program.heure_fin.split(':')[0]}h
                             </div>
                           </div>
                         </HoverCardTrigger>
                         
-                        <HoverCardContent className="w-72 sm:w-80 z-50">
+                        <HoverCardContent className="w-80 z-50">
                           <div className="space-y-3">
                             <div>
-                              <h4 className="text-base sm:text-lg font-semibold">{program.nom}</h4>
+                              <h4 className="text-lg font-semibold">{program.nom}</h4>
                               <div className="flex items-center space-x-2 mt-1">
                                 <Clock className="h-4 w-4 text-muted-foreground" />
                                 <span className="text-sm font-mono">
