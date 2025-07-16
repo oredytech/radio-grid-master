@@ -30,93 +30,130 @@ const FullProgramView = () => {
   const loadRadioPrograms = async () => {
     try {
       setIsLoading(true);
-      console.log('Loading programs for radioSlug:', radioSlug);
+      console.log('Chargement des programmes pour radioSlug:', radioSlug);
       
-      // Rechercher l'utilisateur par le slug de la radio dans la collection utilisateurs
-      const usersQuery = query(
-        collection(db, 'utilisateurs'),
-        where('radioSlug', '==', radioSlug)
-      );
+      // Étape 1: Rechercher l'utilisateur par radioSlug
+      let userDoc = null;
+      let userId = null;
+      let userData = null;
       
-      const usersSnapshot = await getDocs(usersQuery);
-      console.log('Users found:', usersSnapshot.size);
-      
-      if (usersSnapshot.empty) {
-        console.log('Aucune radio trouvée pour le slug:', radioSlug);
-        // Définir des informations par défaut basées sur le slug
-        const defaultRadioName = radioSlug?.replace(/-/g, ' ').replace(/\b\w/g, l => l.toUpperCase()) || 'Radio';
-        setRadioInfo({
-          name: defaultRadioName,
-          director: 'Directeur de programme non spécifié'
-        });
-        setPrograms([]);
-        setIsLoading(false);
-        return;
+      try {
+        const usersQuery = query(
+          collection(db, 'utilisateurs'),
+          where('radioSlug', '==', radioSlug)
+        );
+        const usersSnapshot = await getDocs(usersQuery);
+        console.log('Utilisateurs trouvés par radioSlug:', usersSnapshot.size);
+        
+        if (!usersSnapshot.empty) {
+          userDoc = usersSnapshot.docs[0];
+          userId = userDoc.id;
+          userData = userDoc.data();
+          console.log('Utilisateur trouvé:', { userId, userData });
+        } else {
+          // Recherche alternative par nom de radio
+          console.log('Recherche alternative par nom de radio...');
+          const radioName = radioSlug.replace(/-/g, ' ').toLowerCase();
+          
+          const allUsersSnapshot = await getDocs(collection(db, 'utilisateurs'));
+          for (const doc of allUsersSnapshot.docs) {
+            const data = doc.data();
+            const userRadioName = (data.radioName || '').toLowerCase();
+            if (userRadioName.includes(radioName) || radioName.includes(userRadioName)) {
+              userDoc = doc;
+              userId = doc.id;
+              userData = data;
+              console.log('Utilisateur trouvé par nom de radio:', { userId, userData });
+              break;
+            }
+          }
+        }
+      } catch (error) {
+        console.error('Erreur lors de la recherche d\'utilisateur:', error);
       }
-
-      const userDoc = usersSnapshot.docs[0];
-      const userData = userDoc.data();
-      const userId = userDoc.id;
-      console.log('User data:', userData);
-
-      // Définir les informations de la radio
-      const radioName = userData.radioName || radioSlug?.replace(/-/g, ' ').replace(/\b\w/g, l => l.toUpperCase()) || 'Radio';
-      const directorName = userData.name || 'Non spécifié';
+      
+      // Étape 2: Définir les informations de la radio
+      const defaultRadioName = radioSlug?.replace(/-/g, ' ').replace(/\b\w/g, l => l.toUpperCase()) || 'Radio';
+      const radioName = userData?.radioName || defaultRadioName;
+      const directorName = userData?.name || userData?.directeur || 'Directeur de programme non spécifié';
       
       setRadioInfo({
         name: radioName,
         director: directorName
       });
-
-      // Récupérer les programmes depuis la sous-collection programmes de l'utilisateur
-      console.log('Loading programs for userId:', userId);
       
-      try {
-        // Utiliser le service programmes avec la nouvelle structure
-        const programsData = await programsService.getAll(userId);
-        console.log('Programs loaded via service:', programsData.length);
-        setPrograms(programsData);
-      } catch (programError) {
-        console.log('Erreur service programmes, tentative directe:', programError);
+      // Étape 3: Récupérer les programmes
+      let programsData: Program[] = [];
+      
+      if (userId) {
+        console.log('Récupération des programmes pour userId:', userId);
         
-        // Tentative de récupération directe depuis la sous-collection
         try {
-          const userProgramsQuery = query(
-            collection(db, `utilisateurs/${userId}/programmes`)
-          );
-          const programsSnapshot = await getDocs(userProgramsQuery);
-          const programsData = programsSnapshot.docs.map(doc => ({
-            id: doc.id,
-            ...doc.data(),
-            date_creation: doc.data().date_creation?.toDate?.()?.toISOString() || doc.data().date_creation,
-            date_modification: doc.data().date_modification?.toDate?.()?.toISOString() || doc.data().date_modification
-          })) as Program[];
-          console.log('Programs loaded via direct query:', programsData.length);
-          setPrograms(programsData);
-        } catch (directError) {
-          console.log('Erreur requête directe:', directError);
+          // Utiliser le service amélioré
+          programsData = await programsService.getAll(userId);
+          console.log('Programmes récupérés via service:', programsData.length);
+        } catch (serviceError) {
+          console.error('Erreur service programmes:', serviceError);
           
-          // Dernière tentative avec l'ancienne structure (fallback)
+          // Recherche manuelle dans toutes les structures possibles
+          console.log('Recherche manuelle des programmes...');
+          
+          // Recherche dans la sous-collection
           try {
-            const oldProgramsQuery = query(
-              collection(db, 'programmes'),
-              where('userId', '==', userId)
+            const subCollectionQuery = query(
+              collection(db, `utilisateurs/${userId}/programmes`)
             );
-            const oldProgramsSnapshot = await getDocs(oldProgramsQuery);
-            const oldProgramsData = oldProgramsSnapshot.docs.map(doc => ({
-              id: doc.id,
-              ...doc.data(),
-              date_creation: doc.data().date_creation?.toDate?.()?.toISOString() || doc.data().date_creation,
-              date_modification: doc.data().date_modification?.toDate?.()?.toISOString() || doc.data().date_modification
-            })) as Program[];
-            console.log('Programs loaded via fallback method:', oldProgramsData.length);
-            setPrograms(oldProgramsData);
-          } catch (fallbackError) {
-            console.log('Toutes les méthodes ont échoué:', fallbackError);
-            setPrograms([]);
+            const subCollectionSnapshot = await getDocs(subCollectionQuery);
+            
+            if (!subCollectionSnapshot.empty) {
+              programsData = subCollectionSnapshot.docs.map(doc => {
+                const data = doc.data();
+                return {
+                  id: doc.id,
+                  ...data,
+                  userId: userId,
+                  date_creation: data.date_creation?.toDate?.()?.toISOString() || data.date_creation,
+                  date_modification: data.date_modification?.toDate?.()?.toISOString() || data.date_modification
+                };
+              }) as Program[];
+              console.log('Programmes trouvés (sous-collection manuelle):', programsData.length);
+            } else {
+              // Recherche dans la collection principale
+              const mainQuery = query(
+                collection(db, 'programmes'),
+                where('userId', '==', userId)
+              );
+              const mainSnapshot = await getDocs(mainQuery);
+              
+              programsData = mainSnapshot.docs.map(doc => {
+                const data = doc.data();
+                return {
+                  id: doc.id,
+                  ...data,
+                  date_creation: data.date_creation?.toDate?.()?.toISOString() || data.date_creation,
+                  date_modification: data.date_modification?.toDate?.()?.toISOString() || data.date_modification
+                };
+              }) as Program[];
+              console.log('Programmes trouvés (collection principale):', programsData.length);
+            }
+          } catch (manualError) {
+            console.error('Erreur recherche manuelle:', manualError);
           }
         }
+      } else {
+        console.log('Aucun utilisateur trouvé pour ce radioSlug');
       }
+      
+      // Trier les programmes par jour et heure
+      programsData.sort((a, b) => {
+        const dayOrder = ['Lundi', 'Mardi', 'Mercredi', 'Jeudi', 'Vendredi', 'Samedi', 'Dimanche'];
+        const dayDiff = dayOrder.indexOf(a.jour) - dayOrder.indexOf(b.jour);
+        if (dayDiff !== 0) return dayDiff;
+        return a.heure_debut.localeCompare(b.heure_debut);
+      });
+      
+      setPrograms(programsData);
+      console.log('Programmes finaux:', programsData.length);
       
     } catch (error) {
       console.error('Erreur générale lors du chargement des programmes:', error);
