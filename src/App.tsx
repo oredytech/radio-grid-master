@@ -11,6 +11,9 @@ import Programs from "./pages/Programs";
 import AddProgram from "./pages/AddProgram";
 import EditProgram from "./pages/EditProgram";
 import Animateurs from "./pages/Animateurs";
+import Conducteurs from "./pages/Conducteurs";
+import ConducteurForm from "./pages/ConducteurForm";
+import ConducteurView from "./pages/ConducteurView";
 import FullProgram from "./pages/FullProgram";
 import FullProgramView from "./pages/FullProgramView";
 import StudioDisplay from "./pages/StudioDisplay";
@@ -36,6 +39,10 @@ const App = () => (
             <Route path="/programs/add" element={<AddProgram />} />
             <Route path="/programs/edit/:id" element={<EditProgram />} />
             <Route path="/animateurs" element={<Animateurs />} />
+            <Route path="/conducteurs" element={<Conducteurs />} />
+            <Route path="/conducteurs/nouveau" element={<ConducteurForm />} />
+            <Route path="/conducteurs/:id" element={<ConducteurView />} />
+            <Route path="/conducteurs/:id/edit" element={<ConducteurForm />} />
             <Route path="/full-program" element={<FullProgram />} />
             <Route path="/:radioSlug/programme" element={<FullProgram />} />
             <Route path="/:radioSlug/full-programme" element={<FullProgramView />} />

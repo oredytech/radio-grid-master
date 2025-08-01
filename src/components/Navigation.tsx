@@ -34,6 +34,7 @@ const Navigation = () => {
     { path: '/schedule', label: 'Grille', icon: Calendar },
     { path: '/programs', label: 'Programmes', icon: Tv },
     { path: '/animateurs', label: 'Animateurs', icon: Users },
+    { path: '/conducteurs', label: 'Conducteurs', icon: Radio },
   ];
 
   const isActive = (path: string) => location.pathname === path;
