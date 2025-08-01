@@ -10,7 +10,7 @@ import { collection, query, where, getDocs } from 'firebase/firestore';
 import { db } from '@/config/firebase';
 import { toast } from 'sonner';
 import ProgramHeader from '@/components/ProgramHeader';
-import ProgramTable from '@/components/ProgramTable';
+import { ProgramTable } from '@/components/ProgramTable';
 import ProgramStatistics from '@/components/ProgramStatistics';
 
 const FullProgram = () => {
@@ -151,7 +151,7 @@ const FullProgram = () => {
 
         {/* Program Table */}
         <div className="mb-8">
-          <ProgramTable programs={programs} radioName={radioInfo?.name || radioSlug?.replace(/-/g, ' ').replace(/\b\w/g, l => l.toUpperCase()) || 'Radio'} />
+          <ProgramTable programs={programs} />
         </div>
 
         {programs.length === 0 ? (

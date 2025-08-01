@@ -8,6 +8,7 @@ import { formatDuration, isCurrentProgram } from '@/utils/timeUtils';
 interface ProgramCardProps {
   program: Program;
   showDay?: boolean;
+  onDelete?: () => Promise<void>;
 }
 
 const ProgramCard: React.FC<ProgramCardProps> = ({ program, showDay = false }) => {

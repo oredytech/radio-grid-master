@@ -75,7 +75,7 @@ export const ProgramTable = ({ programs }: { programs: Program[] }) => {
 
   const filteredPrograms = sortedPrograms.filter(program => {
     const dayMatch = filterDay === 'all' || program.jour === filterDay;
-    const typeMatch = filterType === 'all' || program.genre === filterType;
+    const typeMatch = filterType === 'all' || program.categorie === filterType;
     return dayMatch && typeMatch;
   });
 
@@ -238,11 +238,11 @@ export const ProgramTable = ({ programs }: { programs: Program[] }) => {
           <TableBody>
             {sortedAndFilteredPrograms.map((program) => (
               <TableRow key={program.id}>
-                <TableCell>{program.titre}</TableCell>
+                <TableCell>{program.nom}</TableCell>
                 <TableCell>{program.jour}</TableCell>
                 <TableCell>{program.heure_debut}</TableCell>
                 <TableCell>{program.heure_fin}</TableCell>
-                <TableCell>{program.genre}</TableCell>
+                <TableCell>{program.categorie}</TableCell>
                 <TableCell>{Array.isArray(program.animateurs) ? program.animateurs.join(', ') : program.animateurs}</TableCell>
                 <TableCell className="text-right">
                   <DropdownMenu>

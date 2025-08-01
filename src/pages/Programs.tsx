@@ -11,10 +11,10 @@ import { programsService } from '@/services/firebaseService';
 import { animateursService } from '@/services/firebaseService';
 import { toast } from 'sonner';
 import Navigation from '@/components/Navigation';
-import ProgramGridView from '@/components/ProgramGridView';
+import { ProgramGridView } from '@/components/ProgramGridView';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { CATEGORIES_COLORS } from '@/types/program';
-import ProgramImport from '@/components/ProgramImport';
+import { ProgramImport } from '@/components/ProgramImport';
 
 const Programs = () => {
   const { user } = useAuth();
@@ -129,7 +129,7 @@ const Programs = () => {
 
         {showImport && (
           <div className="mb-6">
-            <ProgramImport onImportSuccess={handleImportSuccess} />
+            <ProgramImport onImportComplete={handleImportSuccess} />
           </div>
         )}
 

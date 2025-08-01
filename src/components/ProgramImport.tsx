@@ -113,16 +113,19 @@ export const ProgramImport = ({ onImportComplete }: { onImportComplete?: () => v
     try {
       for (const program of validPrograms) {
         const programData = {
-          titre: program.titre,
+          nom: program.titre,
           jour: program.jour as "Lundi" | "Mardi" | "Mercredi" | "Jeudi" | "Vendredi" | "Samedi" | "Dimanche",
           heure_debut: program.heureDebut,
           heure_fin: program.heureFin,
-          genre: program.type as "Musique" | "Divertissement" | "Sport" | "Culture" | "Magazine" | "Actualité" | "Religion",
+          categorie: program.type as "Musique" | "Divertissement" | "Sport" | "Culture" | "Magazine" | "Actualité" | "Religion",
           animateurs: [program.animateur],
-          description: program.description || ''
+          description: program.description || '',
+          date_creation: new Date().toISOString(),
+          date_modification: new Date().toISOString(),
+          statut: 'En cours' as const
         };
         
-        await programsService.create(user.id, programData);
+        await programsService.create(programData, user.id);
       }
       
       toast.success(`${validPrograms.length} programmes importés avec succès`);
