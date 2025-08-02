@@ -14,6 +14,9 @@ import Animateurs from "./pages/Animateurs";
 import Conducteurs from "./pages/Conducteurs";
 import ConducteurForm from "./pages/ConducteurForm";
 import ConducteurView from "./pages/ConducteurView";
+import AnimateurInvitation from "./pages/AnimateurInvitation";
+import AnimateurLogin from "./pages/AnimateurLogin";
+import AnimateurDashboard from "./pages/AnimateurDashboard";
 import FullProgram from "./pages/FullProgram";
 import FullProgramView from "./pages/FullProgramView";
 import StudioDisplay from "./pages/StudioDisplay";
@@ -47,6 +50,9 @@ const App = () => (
             <Route path="/:radioSlug/programme" element={<FullProgram />} />
             <Route path="/:radioSlug/full-programme" element={<FullProgramView />} />
             <Route path="/:radioSlug/studio-display" element={<StudioDisplay />} />
+            <Route path="/invitation/:token" element={<AnimateurInvitation />} />
+            <Route path="/:radioSlug/animateur/login" element={<AnimateurLogin />} />
+            <Route path="/:radioSlug/animateur" element={<AnimateurDashboard />} />
             <Route path="*" element={<NotFound />} />
           </Routes>
         </BrowserRouter>

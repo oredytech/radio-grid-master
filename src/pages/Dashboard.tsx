@@ -3,14 +3,16 @@ import { Navigate, Link } from 'react-router-dom';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
-import { Radio, Clock, Calendar, Users, TrendingUp, Zap, Monitor } from 'lucide-react';
+import { Radio, Clock, Calendar, Users, TrendingUp, Zap, Monitor, FileText, CheckCircle, XCircle } from 'lucide-react';
 import { useAuth } from '@/contexts/AuthContext';
 import Navigation from '@/components/Navigation';
 import ProgramCard from '@/components/ProgramCard';
 import { Program } from '@/types/program';
 import { programsService, animateursService } from '@/services/firebaseService';
+import { conducteurService } from '@/services/conducteurService';
 import { getCurrentTime, getCurrentDay, isCurrentProgram } from '@/utils/timeUtils';
 import { toast } from 'sonner';
+import InviteAnimateurDialog from '@/components/InviteAnimateurDialog';
 
 const Dashboard = () => {
   const { user } = useAuth();
@@ -18,6 +20,7 @@ const Dashboard = () => {
   const [currentDay, setCurrentDay] = useState(getCurrentDay());
   const [programs, setPrograms] = useState<Program[]>([]);
   const [animateursCount, setAnimateursCount] = useState(0);
+  const [conducteursEnAttente, setConducteursEnAttente] = useState<any[]>([]);
   const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
@@ -40,17 +43,30 @@ const Dashboard = () => {
     
     try {
       setIsLoading(true);
-      const [programsData, animateursData] = await Promise.all([
+      const [programsData, animateursData, conducteursData] = await Promise.all([
         programsService.getAll(user.id),
-        animateursService.getAll(user.id)
+        animateursService.getAll(user.id),
+        conducteurService.getByStatus('en_attente')
       ]);
       setPrograms(programsData);
       setAnimateursCount(animateursData.length);
+      setConducteursEnAttente(conducteursData);
     } catch (error) {
       console.error('Erreur lors du chargement des données:', error);
       toast.error('Erreur lors du chargement des données');
     } finally {
       setIsLoading(false);
+    }
+  };
+
+  const handleValidateConducteur = async (id: string, status: 'valide' | 'rejete', commentaires?: string) => {
+    try {
+      await conducteurService.updateStatus(id, status, commentaires);
+      toast.success(status === 'valide' ? 'Conducteur validé' : 'Conducteur rejeté');
+      loadData(); // Recharger les données
+    } catch (error) {
+      console.error('Erreur lors de la validation:', error);
+      toast.error('Erreur lors de la validation');
     }
   };
 
@@ -247,6 +263,101 @@ const Dashboard = () => {
                 {upcomingPrograms.map((program) => (
                   <ProgramCard key={program.id} program={program} showDay />
                 ))}
+              </div>
+            </CardContent>
+          </Card>
+        </div>
+
+        {/* Conducteurs en attente et Actions */}
+        <div className="grid grid-cols-1 xl:grid-cols-2 gap-6 sm:gap-8 mt-6 sm:mt-8">
+          <Card>
+            <CardHeader>
+              <CardTitle className="flex items-center justify-between">
+                <div className="flex items-center space-x-2">
+                  <FileText className="h-5 w-5" />
+                  <span>Conducteurs en attente</span>
+                </div>
+                <Badge variant="secondary">{conducteursEnAttente.length}</Badge>
+              </CardTitle>
+              <CardDescription>
+                Conducteurs soumis pour validation
+              </CardDescription>
+            </CardHeader>
+            <CardContent>
+              <div className="space-y-4 max-h-96 overflow-y-auto">
+                {conducteursEnAttente.length > 0 ? (
+                  conducteursEnAttente.map((conducteur) => (
+                    <div key={conducteur.id} className="border rounded-lg p-4 space-y-3">
+                      <div className="flex justify-between items-start">
+                        <div>
+                          <h4 className="font-medium">{conducteur.titre}</h4>
+                          <p className="text-sm text-muted-foreground">
+                            {new Date(conducteur.date_emission).toLocaleDateString()} • {conducteur.heure_debut} - {conducteur.heure_fin}
+                          </p>
+                        </div>
+                        <Badge variant="outline">En attente</Badge>
+                      </div>
+                      <div className="flex space-x-2">
+                        <Button 
+                          size="sm" 
+                          variant="default"
+                          onClick={() => handleValidateConducteur(conducteur.id, 'valide')}
+                        >
+                          <CheckCircle className="h-4 w-4 mr-1" />
+                          Valider
+                        </Button>
+                        <Button 
+                          size="sm" 
+                          variant="destructive"
+                          onClick={() => handleValidateConducteur(conducteur.id, 'rejete')}
+                        >
+                          <XCircle className="h-4 w-4 mr-1" />
+                          Rejeter
+                        </Button>
+                        <Button 
+                          size="sm" 
+                          variant="outline"
+                          onClick={() => window.open(`/conducteurs/${conducteur.id}`, '_blank')}
+                        >
+                          Voir
+                        </Button>
+                      </div>
+                    </div>
+                  ))
+                ) : (
+                  <p className="text-muted-foreground text-center py-6">
+                    Aucun conducteur en attente
+                  </p>
+                )}
+              </div>
+            </CardContent>
+          </Card>
+
+          <Card>
+            <CardHeader>
+              <CardTitle className="flex items-center space-x-2">
+                <Users className="h-5 w-5" />
+                <span>Gestion des animateurs</span>
+              </CardTitle>
+              <CardDescription>
+                Invitez et gérez vos animateurs
+              </CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              <InviteAnimateurDialog 
+                radioSlug={user.radioSlug || 'default'}
+                radioNom={user.radioName}
+                onInvitationSent={loadData}
+              />
+              <div className="space-y-2">
+                <p className="text-sm text-muted-foreground">
+                  <strong>{animateursCount}</strong> animateurs actifs
+                </p>
+                <Link to="/animateurs">
+                  <Button variant="outline" className="w-full">
+                    Gérer les animateurs
+                  </Button>
+                </Link>
               </div>
             </CardContent>
           </Card>
