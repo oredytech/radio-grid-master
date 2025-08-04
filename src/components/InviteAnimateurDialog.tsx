@@ -10,7 +10,7 @@ import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '
 import { toast } from 'sonner';
 import { animateurService } from '@/services/animateurService';
 import { useAuth } from '@/contexts/AuthContext';
-import { UserPlus } from 'lucide-react';
+import { UserPlus, Link, Copy } from 'lucide-react';
 
 const invitationSchema = z.object({
   email: z.string().email('Email invalide'),
@@ -44,6 +44,18 @@ export default function InviteAnimateurDialog({
 
   const generateInvitationToken = () => {
     return crypto.randomUUID() + '-' + Date.now().toString(36);
+  };
+
+  const copySignupLink = async () => {
+    const signupLink = `${window.location.origin}/animateur/signup?radio=${radioSlug}&nom=${encodeURIComponent(radioNom)}`;
+    
+    try {
+      await navigator.clipboard.writeText(signupLink);
+      toast.success('Lien de création de compte copié dans le presse-papiers');
+    } catch (error) {
+      console.error('Erreur lors de la copie du lien:', error);
+      toast.error('Erreur lors de la copie du lien');
+    }
   };
 
   const onSubmit = async (data: InvitationForm) => {
@@ -98,6 +110,21 @@ export default function InviteAnimateurDialog({
             Envoyez une invitation à un animateur pour rejoindre {radioNom}
           </DialogDescription>
         </DialogHeader>
+
+        <div className="mb-4">
+          <Button 
+            type="button" 
+            variant="outline" 
+            onClick={copySignupLink}
+            className="w-full"
+          >
+            <Link className="h-4 w-4 mr-2" />
+            Copier le lien de création de compte
+          </Button>
+          <p className="text-sm text-muted-foreground mt-2">
+            Partagez ce lien avec vos animateurs pour qu'ils créent leur compte directement
+          </p>
+        </div>
         
         <Form {...form}>
           <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
