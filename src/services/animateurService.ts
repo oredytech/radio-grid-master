@@ -23,9 +23,9 @@ export const animateurService = {
       .eq('token', token)
       .eq('accepted_at', null)
       .gt('expires_at', new Date().toISOString())
-      .single();
+      .maybeSingle();
     
-    if (error && error.code !== 'PGRST116') throw error;
+    if (error) throw error;
     return data;
   },
 
