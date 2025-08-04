@@ -123,6 +123,31 @@ export const animateurService = {
     return data || [];
   },
 
+  // Créer un animateur
+  async createAnimateur(animateurData: Omit<AnimateurSupabase, 'id' | 'created_at' | 'updated_at'>): Promise<string> {
+    const { data, error } = await castSupabase
+      .from('animateurs')
+      .insert(animateurData)
+      .select('id')
+      .single();
+    
+    if (error) throw error;
+    return data.id;
+  },
+
+  // Assigner un animateur à un programme
+  async assignAnimateurToProgram(animateurId: string, firebaseProgramId: string): Promise<void> {
+    const { error } = await castSupabase
+      .from('animateur_programs')
+      .insert({
+        animateur_id: animateurId,
+        firebase_program_id: firebaseProgramId,
+        can_edit: true
+      });
+    
+    if (error) throw error;
+  },
+
   // Générer un slug unique
   async generateUniqueSlug(nom: string, prenom: string): Promise<string> {
     const baseSlug = `${prenom.toLowerCase()}-${nom.toLowerCase()}`

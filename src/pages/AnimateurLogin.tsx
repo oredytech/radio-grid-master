@@ -92,6 +92,19 @@ export default function AnimateurLogin() {
               >
                 {loading ? 'Connexion...' : 'Se connecter'}
               </Button>
+              
+              <div className="text-center mt-4">
+                <p className="text-sm text-muted-foreground">
+                  Pas encore de compte ?{' '}
+                  <button
+                    type="button"
+                    onClick={() => navigate(`/${radioSlug}/animateur/signup`)}
+                    className="text-primary hover:underline font-medium"
+                  >
+                    Créer un compte
+                  </button>
+                </p>
+              </div>
             </form>
           </Form>
         </CardContent>

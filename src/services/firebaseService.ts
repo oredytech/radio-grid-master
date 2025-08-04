@@ -229,6 +229,86 @@ export const animateursService = {
   }
 };
 
+// General Firebase Service
+export const firebaseService = {
+  async getPrograms() {
+    try {
+      // Récupérer tous les programmes de tous les utilisateurs
+      const usersSnapshot = await getDocs(collection(db, 'utilisateurs'));
+      let allPrograms: Program[] = [];
+      
+      for (const userDoc of usersSnapshot.docs) {
+        try {
+          const userProgramsQuery = query(
+            collection(db, `utilisateurs/${userDoc.id}/programmes`)
+          );
+          const userProgramsSnapshot = await getDocs(userProgramsQuery);
+          
+          if (!userProgramsSnapshot.empty) {
+            const programs = userProgramsSnapshot.docs.map(doc => {
+              const data = doc.data();
+              return {
+                id: doc.id,
+                ...data,
+                userId: userDoc.id,
+                date_creation: data.date_creation?.toDate?.()?.toISOString() || data.date_creation,
+                date_modification: data.date_modification?.toDate?.()?.toISOString() || data.date_modification
+              };
+            }) as Program[];
+            
+            allPrograms = [...allPrograms, ...programs];
+          }
+        } catch (error) {
+          console.log(`Erreur lors de la récupération des programmes pour ${userDoc.id}:`, error);
+        }
+      }
+      
+      // Fallback: essayer aussi l'ancienne structure
+      if (allPrograms.length === 0) {
+        const mainCollectionSnapshot = await getDocs(collection(db, 'programmes'));
+        allPrograms = mainCollectionSnapshot.docs.map(doc => {
+          const data = doc.data();
+          return {
+            id: doc.id,
+            ...data,
+            date_creation: data.date_creation?.toDate?.()?.toISOString() || data.date_creation,
+            date_modification: data.date_modification?.toDate?.()?.toISOString() || data.date_modification
+          };
+        }) as Program[];
+      }
+      
+      return allPrograms;
+    } catch (error) {
+      console.error('Erreur lors de la récupération des programmes:', error);
+      return [];
+    }
+  },
+
+  async getUserById(userId: string) {
+    try {
+      // Récupérer les infos directeur depuis la sous-collection
+      const directeurQuery = query(
+        collection(db, `utilisateurs/${userId}/directeur`)
+      );
+      const directeurSnapshot = await getDocs(directeurQuery);
+      
+      if (!directeurSnapshot.empty) {
+        const directeurData = directeurSnapshot.docs[0].data();
+        return {
+          id: userId,
+          name: directeurData.name || directeurData.nom || 'Directeur',
+          ...directeurData
+        };
+      }
+      
+      return null;
+    } catch (error) {
+      console.error('Erreur lors de la récupération de l\'utilisateur:', error);
+      return null;
+    }
+  }
+};
+
 // File Upload Service
 export const uploadService = {
   async uploadImage(file: File, folder: string = 'images') {
