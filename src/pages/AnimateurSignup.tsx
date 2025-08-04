@@ -8,6 +8,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Checkbox } from '@/components/ui/checkbox';
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
 import { useToast } from '@/hooks/use-toast';
 import { createUserWithEmailAndPassword } from 'firebase/auth';
@@ -21,19 +22,31 @@ const signupSchema = z.object({
   email: z.string().email('Email invalide'),
   password: z.string().min(6, 'Le mot de passe doit contenir au moins 6 caractères'),
   confirmPassword: z.string(),
-  radioId: z.string().min(1, 'Veuillez sélectionner une radio'),
+  radioNom: z.string().min(1, 'Veuillez sélectionner une radio'),
+  emissionId: z.string().optional(),
+  emissionManuelle: z.string().optional(),
   bio: z.string().optional(),
 }).refine((data) => data.password === data.confirmPassword, {
   message: "Les mots de passe ne correspondent pas",
   path: ["confirmPassword"],
+}).refine((data) => data.emissionId || data.emissionManuelle, {
+  message: "Veuillez sélectionner une émission ou en saisir une manuellement",
+  path: ["emissionId"],
 });
 
 type SignupForm = z.infer<typeof signupSchema>;
+
+interface RadioStation {
+  nom: string;
+  directeurNom: string;
+  directeurId: string;
+}
 
 interface RadioProgram {
   id: string;
   nom: string;
   directeurNom: string;
+  radioNom: string;
 }
 
 export default function AnimateurSignup() {
@@ -43,6 +56,9 @@ export default function AnimateurSignup() {
   const [loading, setLoading] = useState(false);
   const [submitting, setSubmitting] = useState(false);
   const [radioPrograms, setRadioPrograms] = useState<RadioProgram[]>([]);
+  const [radioStations, setRadioStations] = useState<RadioStation[]>([]);
+  const [selectedRadio, setSelectedRadio] = useState<string>('');
+  const [useManualEmission, setUseManualEmission] = useState(false);
 
   const form = useForm<SignupForm>({
     resolver: zodResolver(signupSchema),
@@ -52,7 +68,9 @@ export default function AnimateurSignup() {
       email: '',
       password: '',
       confirmPassword: '',
-      radioId: '',
+      radioNom: '',
+      emissionId: '',
+      emissionManuelle: '',
       bio: '',
     },
   });
@@ -63,26 +81,47 @@ export default function AnimateurSignup() {
         setLoading(true);
         const programs = await firebaseService.getPrograms();
         
-        const radioData: RadioProgram[] = await Promise.all(
+        // Grouper les programmes par directeur (qui représente une radio)
+        const radioMap = new Map<string, { directeurNom: string; directeurId: string; programs: RadioProgram[] }>();
+        
+        await Promise.all(
           programs.map(async (program) => {
             try {
               const directeur = await firebaseService.getUserById(program.userId);
-              return {
+              const directeurNom = directeur?.name || 'Directeur inconnu';
+              const radioKey = `${directeurNom}_${program.userId}`;
+              
+              if (!radioMap.has(radioKey)) {
+                radioMap.set(radioKey, {
+                  directeurNom,
+                  directeurId: program.userId,
+                  programs: []
+                });
+              }
+              
+              radioMap.get(radioKey)!.programs.push({
                 id: program.id,
                 nom: program.nom,
-                directeurNom: directeur?.name || 'Directeur inconnu'
-              };
+                directeurNom,
+                radioNom: directeurNom
+              });
             } catch (error) {
-              return {
-                id: program.id,
-                nom: program.nom,
-                directeurNom: 'Directeur inconnu'
-              };
+              console.error('Erreur lors du chargement du directeur:', error);
             }
           })
         );
         
-        setRadioPrograms(radioData);
+        // Convertir en tableaux pour les états
+        const stations: RadioStation[] = Array.from(radioMap.entries()).map(([nom, data]) => ({
+          nom,
+          directeurNom: data.directeurNom,
+          directeurId: data.directeurId
+        }));
+        
+        const allPrograms: RadioProgram[] = Array.from(radioMap.values()).flatMap(data => data.programs);
+        
+        setRadioStations(stations);
+        setRadioPrograms(allPrograms);
       } catch (error) {
         console.error('Erreur lors du chargement des radios:', error);
         toast({
@@ -125,8 +164,9 @@ export default function AnimateurSignup() {
 
       const animateurId = await animateurService.createAnimateur(animateurData);
 
-      // Associer l'animateur au programme
-      await animateurService.assignAnimateurToProgram(animateurId, data.radioId);
+      // Associer l'animateur au programme sélectionné ou créer une association manuelle
+      const programId = data.emissionId || 'manual_' + Date.now();
+      await animateurService.assignAnimateurToProgram(animateurId, programId);
 
       toast({
         title: 'Compte créé avec succès',
@@ -213,23 +253,32 @@ export default function AnimateurSignup() {
 
               <FormField
                 control={form.control}
-                name="radioId"
+                name="radioNom"
                 render={({ field }) => (
                   <FormItem>
                     <FormLabel>Radio</FormLabel>
-                    <Select onValueChange={field.onChange} defaultValue={field.value}>
+                    <Select 
+                      onValueChange={(value) => {
+                        field.onChange(value);
+                        setSelectedRadio(value);
+                        form.setValue('emissionId', '');
+                        form.setValue('emissionManuelle', '');
+                        setUseManualEmission(false);
+                      }} 
+                      defaultValue={field.value}
+                    >
                       <FormControl>
                         <SelectTrigger>
                           <SelectValue placeholder="Sélectionnez votre radio" />
                         </SelectTrigger>
                       </FormControl>
-                      <SelectContent>
-                        {radioPrograms.map((radio) => (
-                          <SelectItem key={radio.id} value={radio.id}>
+                      <SelectContent className="bg-background border">
+                        {radioStations.map((station) => (
+                          <SelectItem key={station.nom} value={station.nom}>
                             <div className="flex flex-col">
-                              <span className="font-medium">{radio.nom}</span>
+                              <span className="font-medium">{station.nom}</span>
                               <span className="text-sm text-muted-foreground">
-                                Directeur: {radio.directeurNom}
+                                Directeur: {station.directeurNom}
                               </span>
                             </div>
                           </SelectItem>
@@ -240,6 +289,71 @@ export default function AnimateurSignup() {
                   </FormItem>
                 )}
               />
+
+              {selectedRadio && (
+                <div className="space-y-4">
+                  <div className="flex items-center space-x-2">
+                    <Checkbox 
+                      id="manual-emission"
+                      checked={useManualEmission}
+                      onCheckedChange={(checked) => {
+                        setUseManualEmission(checked as boolean);
+                        if (checked) {
+                          form.setValue('emissionId', '');
+                        } else {
+                          form.setValue('emissionManuelle', '');
+                        }
+                      }}
+                    />
+                    <label htmlFor="manual-emission" className="text-sm">
+                      Mon émission n'est pas dans la liste
+                    </label>
+                  </div>
+
+                  {!useManualEmission ? (
+                    <FormField
+                      control={form.control}
+                      name="emissionId"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel>Émission</FormLabel>
+                          <Select onValueChange={field.onChange} defaultValue={field.value}>
+                            <FormControl>
+                              <SelectTrigger>
+                                <SelectValue placeholder="Sélectionnez votre émission" />
+                              </SelectTrigger>
+                            </FormControl>
+                            <SelectContent className="bg-background border">
+                              {radioPrograms
+                                .filter(program => program.radioNom === selectedRadio)
+                                .map((program) => (
+                                  <SelectItem key={program.id} value={program.id}>
+                                    {program.nom}
+                                  </SelectItem>
+                                ))}
+                            </SelectContent>
+                          </Select>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+                  ) : (
+                    <FormField
+                      control={form.control}
+                      name="emissionManuelle"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel>Nom de votre émission</FormLabel>
+                          <FormControl>
+                            <Input placeholder="Saisissez le nom de votre émission" {...field} />
+                          </FormControl>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+                  )}
+                </div>
+              )}
 
               <FormField
                 control={form.control}
