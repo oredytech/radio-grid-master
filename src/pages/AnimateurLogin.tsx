@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
@@ -7,9 +7,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
-import { toast } from 'sonner';
-import { signInWithEmailAndPassword } from 'firebase/auth';
-import { auth } from '@/config/firebase';
+import { useAuth } from '@/contexts/SupabaseAuthContext';
 
 const loginSchema = z.object({
   email: z.string().email('Email invalide'),
@@ -22,6 +20,7 @@ export default function AnimateurLogin() {
   const { radioSlug } = useParams<{ radioSlug: string }>();
   const navigate = useNavigate();
   const [loading, setLoading] = useState(false);
+  const { signIn } = useAuth();
 
   const form = useForm<LoginForm>({
     resolver: zodResolver(loginSchema),
@@ -34,12 +33,10 @@ export default function AnimateurLogin() {
   const onSubmit = async (data: LoginForm) => {
     setLoading(true);
     try {
-      await signInWithEmailAndPassword(auth, data.email, data.password);
-      toast.success('Connexion réussie!');
+      await signIn(data.email, data.password);
       navigate(`/${radioSlug}/animateur`);
     } catch (error: any) {
       console.error('Erreur de connexion:', error);
-      toast.error('Email ou mot de passe incorrect');
     } finally {
       setLoading(false);
     }
