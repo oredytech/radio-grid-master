@@ -7,7 +7,7 @@ import { toast } from 'sonner';
 import { Upload, FileText, Check, X } from 'lucide-react';
 import * as XLSX from 'xlsx';
 import { programsService } from '@/services/firebaseService';
-import { useAuth } from '@/contexts/AuthContext';
+import { useAuth } from '@/contexts/SupabaseAuthContext';
 
 interface ImportedProgram {
   titre: string;

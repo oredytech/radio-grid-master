@@ -7,7 +7,7 @@ import { Textarea } from '@/components/ui/textarea';
 import { Label } from '@/components/ui/label';
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { ArrowLeft, Edit, CheckCircle, XCircle, Download, Clock, Calendar, User, FileText, Music, Mic, Tv, Radio, Megaphone, Cloud, Zap, MessageSquare, BookOpen } from 'lucide-react';
-import { useAuth } from '@/contexts/AuthContext';
+import { useAuth } from '@/contexts/SupabaseAuthContext';
 import Navigation from '@/components/Navigation';
 import { ConducteurWithElements, ElementType } from '@/types/conducteur';
 import { conducteurService } from '@/services/conducteurService';

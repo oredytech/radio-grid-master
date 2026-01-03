@@ -11,7 +11,7 @@ import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover
 import { Badge } from '@/components/ui/badge';
 import { DragDropContext, Droppable, Draggable, DropResult } from '@hello-pangea/dnd';
 import { Save, Send, Plus, Trash2, GripVertical, Calendar as CalendarIcon, Clock, FileText } from 'lucide-react';
-import { useAuth } from '@/contexts/AuthContext';
+import { useAuth } from '@/contexts/SupabaseAuthContext';
 import Navigation from '@/components/Navigation';
 import { Conducteur, ConducteurElement, ElementType, ConducteurWithElements } from '@/types/conducteur';
 import { conducteurService } from '@/services/conducteurService';

@@ -7,7 +7,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { User, X, Image } from 'lucide-react';
 import { Animateur } from '@/types/animateur';
 import { animateursService } from '@/services/firebaseService';
-import { useAuth } from '@/contexts/AuthContext';
+import { useAuth } from '@/contexts/SupabaseAuthContext';
 import { toast } from 'sonner';
 
 interface AnimateurFormProps {

@@ -4,7 +4,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Radio, Clock, Calendar, Users, TrendingUp, Zap, Monitor, FileText, CheckCircle, XCircle } from 'lucide-react';
-import { useAuth } from '@/contexts/AuthContext';
+import { useAuth } from '@/contexts/SupabaseAuthContext';
 import Navigation from '@/components/Navigation';
 import ProgramCard from '@/components/ProgramCard';
 import { Program } from '@/types/program';
@@ -152,7 +152,7 @@ const Dashboard = () => {
                   {currentDay}
                 </div>
               </div>
-              <Link to={`/${user.radioSlug}/studio-display`}>
+              <Link to={`/${user.user_metadata?.radio_slug || 'default'}/studio-display`}>
                 <Button variant="outline" size="sm" className="flex items-center gap-2">
                   <Monitor className="h-4 w-4" />
                   <span className="hidden sm:inline">Studio Display</span>
@@ -345,8 +345,8 @@ const Dashboard = () => {
             </CardHeader>
             <CardContent className="space-y-4">
               <InviteAnimateurDialog 
-                radioSlug={user.radioSlug || 'default'}
-                radioNom={user.radioName}
+                radioSlug={user.user_metadata?.radio_slug || 'default'}
+                radioNom={user.user_metadata?.radio_name}
                 onInvitationSent={loadData}
               />
               <div className="space-y-2">

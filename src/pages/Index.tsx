@@ -6,7 +6,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Label } from '@/components/ui/label';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Radio, Mail, Lock, Eye, EyeOff, User, Building, Headphones } from 'lucide-react';
-import { useAuth } from '@/contexts/AuthContext';
+import { useAuth } from '@/contexts/SupabaseAuthContext';
 import { toast } from 'sonner';
 import { getRandomRadioSlug } from '@/utils/randomProgram';
 
@@ -61,7 +61,7 @@ const Index = () => {
 
     setIsRegistering(true);
     try {
-      await signUp(registerData.email, registerData.password, registerData.name, registerData.fonction, registerData.radioName);
+      await signUp(registerData.email, registerData.password, registerData.name, registerData.fonction as 'directeur' | 'animateur', registerData.radioName);
       toast.success('Compte créé avec succès !');
     } catch (error: any) {
       if (error.code === 'auth/email-already-in-use') {
