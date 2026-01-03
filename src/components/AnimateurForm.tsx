@@ -6,7 +6,7 @@ import { Label } from '@/components/ui/label';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { User, X, Image } from 'lucide-react';
 import { Animateur } from '@/types/animateur';
-import { animateursService } from '@/services/firebaseService';
+import { animateursService } from '@/services/supabaseService';
 import { useAuth } from '@/contexts/SupabaseAuthContext';
 import { toast } from 'sonner';
 

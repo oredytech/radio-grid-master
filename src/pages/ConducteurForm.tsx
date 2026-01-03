@@ -15,7 +15,7 @@ import { useAuth } from '@/contexts/SupabaseAuthContext';
 import Navigation from '@/components/Navigation';
 import { Conducteur, ConducteurElement, ElementType, ConducteurWithElements } from '@/types/conducteur';
 import { conducteurService } from '@/services/conducteurService';
-import { programsService } from '@/services/firebaseService';
+import { programsService } from '@/services/supabaseService';
 import { Program } from '@/types/program';
 import { toast } from 'sonner';
 import { format } from 'date-fns';

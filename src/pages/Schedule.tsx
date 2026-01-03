@@ -7,7 +7,7 @@ import { Calendar, Clock, ChevronLeft, ChevronRight } from 'lucide-react';
 import { useAuth } from '@/contexts/SupabaseAuthContext';
 import Navigation from '@/components/Navigation';
 import { Program, CATEGORIES_COLORS } from '@/types/program';
-import { programsService } from '@/services/firebaseService';
+import { programsService } from '@/services/supabaseService';
 import { getCurrentTime, getCurrentDay, timeToMinutes } from '@/utils/timeUtils';
 import { toast } from 'sonner';
 

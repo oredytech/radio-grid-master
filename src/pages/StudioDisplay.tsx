@@ -6,10 +6,8 @@ import { Badge } from '@/components/ui/badge';
 import { Clock, Calendar, Radio, User } from 'lucide-react';
 import { Program } from '@/types/program';
 import { Animateur } from '@/types/animateur';
-import { collection, query, where, getDocs } from 'firebase/firestore';
-import { db } from '@/config/firebase';
+import { programsService, animateursService, radioService } from '@/services/supabaseService';
 import { getCurrentTime, getCurrentDay, isCurrentProgram } from '@/utils/timeUtils';
-import { programsService, animateursService } from '@/services/firebaseService';
 
 const StudioDisplay = () => {
   const { radioSlug } = useParams();
@@ -55,14 +53,10 @@ const StudioDisplay = () => {
 
   const loadRadioData = async () => {
     try {
-      const q = query(collection(db, 'utilisateurs'), where('radioSlug', '==', radioSlug));
-      const querySnapshot = await getDocs(q);
-      
-      if (!querySnapshot.empty) {
-        const userData = querySnapshot.docs[0].data();
-        const userDocId = querySnapshot.docs[0].id;
-        setRadioName(userData.radioName);
-        setUserId(userDocId);
+      const radio = await radioService.getBySlug(radioSlug || '');
+      if (radio) {
+        setRadioName(radio.name);
+        setUserId(radio.owner_id);
       }
     } catch (error) {
       console.error('Erreur lors du chargement des données radio:', error);

@@ -10,8 +10,7 @@ import { toast } from 'sonner';
 import { animateurService } from '@/services/animateurService';
 import { conducteurService } from '@/services/conducteurService';
 import { AnimateurWithPrograms } from '@/types/animateur';
-import { signOut } from 'firebase/auth';
-import { auth } from '@/config/firebase';
+import { supabase } from '@/integrations/supabase/client';
 import { Calendar, Clock, FileText, LogOut, User, Radio } from 'lucide-react';
 
 export default function AnimateurDashboard() {
@@ -54,7 +53,7 @@ export default function AnimateurDashboard() {
 
   const handleLogout = async () => {
     try {
-      await signOut(auth);
+      await supabase.auth.signOut();
       navigate(`/${radioSlug}/animateur/login`);
     } catch (error) {
       console.error('Erreur de déconnexion:', error);

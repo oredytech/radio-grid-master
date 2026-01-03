@@ -5,9 +5,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Calendar, Clock, Users } from 'lucide-react';
 import { Program, CATEGORIES_COLORS } from '@/types/program';
-import { programsService } from '@/services/firebaseService';
-import { collection, query, where, getDocs } from 'firebase/firestore';
-import { db } from '@/config/firebase';
+import { programsService, radioService } from '@/services/supabaseService';
 import { toast } from 'sonner';
 import ProgramHeader from '@/components/ProgramHeader';
 import { ProgramTable } from '@/components/ProgramTable';
@@ -32,18 +30,11 @@ const FullProgram = () => {
       setIsLoading(true);
       console.log('Loading programs for radioSlug:', radioSlug);
       
-      // Rechercher l'utilisateur par le slug de la radio
-      const usersQuery = query(
-        collection(db, 'utilisateurs'),
-        where('radioSlug', '==', radioSlug)
-      );
+      // Get radio info from Supabase
+      const radio = await radioService.getBySlug(radioSlug || '');
       
-      const usersSnapshot = await getDocs(usersQuery);
-      console.log('Users found:', usersSnapshot.size);
-      
-      if (usersSnapshot.empty) {
+      if (!radio) {
         console.log('Aucune radio trouvée pour le slug:', radioSlug);
-        // Définir des informations par défaut basées sur le slug
         setRadioInfo({
           name: radioSlug?.replace(/-/g, ' ').replace(/\b\w/g, l => l.toUpperCase()) || 'Radio',
           director: 'Non spécifié'
@@ -53,46 +44,18 @@ const FullProgram = () => {
         return;
       }
 
-      const userDoc = usersSnapshot.docs[0];
-      const userData = userDoc.data();
-      const userId = userDoc.id;
-      console.log('User data:', userData);
-
       setRadioInfo({
-        name: userData.radioName || radioSlug?.replace(/-/g, ' ').replace(/\b\w/g, l => l.toUpperCase()) || 'Radio',
-        director: userData.name || 'Non spécifié'
+        name: radio.name || radioSlug?.replace(/-/g, ' ').replace(/\b\w/g, l => l.toUpperCase()) || 'Radio',
+        director: 'Directeur'
       });
 
-      // Récupérer les programmes de cet utilisateur avec une approche plus robuste
-      console.log('Loading programs for userId:', userId);
-      try {
-        const programsData = await programsService.getAll(userId);
-        console.log('Programs loaded:', programsData.length);
-        setPrograms(programsData);
-      } catch (programError) {
-        console.log('Erreur lors du chargement des programmes, tentative de récupération alternative:', programError);
-        // Tentative de récupération directe depuis Firestore
-        try {
-          const programsQuery = query(
-            collection(db, 'programmes'),
-            where('userId', '==', userId)
-          );
-          const programsSnapshot = await getDocs(programsQuery);
-          const programsData = programsSnapshot.docs.map(doc => ({
-            id: doc.id,
-            ...doc.data()
-          })) as Program[];
-          console.log('Programs loaded via alternative method:', programsData.length);
-          setPrograms(programsData);
-        } catch (altError) {
-          console.log('Erreur alternative, affichage sans programmes:', altError);
-          setPrograms([]);
-        }
-      }
+      // Get programs for this radio
+      const programsData = await programsService.getAll(radio.owner_id);
+      console.log('Programs loaded:', programsData.length);
+      setPrograms(programsData);
       
     } catch (error) {
       console.error('Erreur lors du chargement des programmes:', error);
-      // Ne pas afficher d'erreur toast, simplement définir des valeurs par défaut
       setRadioInfo({
         name: radioSlug?.replace(/-/g, ' ').replace(/\b\w/g, l => l.toUpperCase()) || 'Radio',
         director: 'Non spécifié'

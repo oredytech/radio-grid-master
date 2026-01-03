@@ -12,7 +12,7 @@ import { useAuth } from '@/contexts/SupabaseAuthContext';
 import Navigation from '@/components/Navigation';
 import { Program, CATEGORIES } from '@/types/program';
 import { Animateur } from '@/types/animateur';
-import { programsService, animateursService } from '@/services/firebaseService';
+import { programsService, animateursService } from '@/services/supabaseService';
 import { toast } from 'sonner';
 import { ProgramConflictDialog } from '@/components/ProgramConflictDialog';
 import { detectProgramConflicts, ProgramConflict } from '@/utils/programConflicts';

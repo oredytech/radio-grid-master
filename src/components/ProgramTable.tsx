@@ -27,7 +27,7 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu"
 import { MoreHorizontal } from 'lucide-react';
-import { programsService } from '@/services/firebaseService';
+import { programsService } from '@/services/supabaseService';
 import { toast } from 'sonner';
 import { Link } from 'react-router-dom';
 import { ProgramGridView } from './ProgramGridView';
