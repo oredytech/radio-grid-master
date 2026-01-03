@@ -11,10 +11,9 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Checkbox } from '@/components/ui/checkbox';
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
 import { useToast } from '@/hooks/use-toast';
-import { createUserWithEmailAndPassword } from 'firebase/auth';
-import { auth } from '@/config/firebase';
+import { supabase } from '@/integrations/supabase/client';
 import { animateurService } from '@/services/animateurService';
-import { firebaseService } from '@/services/firebaseService';
+import { firebaseService } from '@/services/supabaseService';
 
 const signupSchema = z.object({
   prenom: z.string().min(2, 'Le prénom doit contenir au moins 2 caractères'),
@@ -141,19 +140,28 @@ export default function AnimateurSignup() {
     try {
       setSubmitting(true);
 
-      // Créer le compte Firebase
-      const userCredential = await createUserWithEmailAndPassword(
-        auth,
-        data.email,
-        data.password
-      );
+      // Créer le compte Supabase
+      const { data: authData, error: authError } = await supabase.auth.signUp({
+        email: data.email,
+        password: data.password,
+        options: {
+          emailRedirectTo: `${window.location.origin}/${radioSlug}/animateur`,
+          data: {
+            name: `${data.prenom} ${data.nom}`,
+            role: 'animateur',
+          },
+        },
+      });
+
+      if (authError) throw authError;
+      if (!authData.user) throw new Error('Erreur lors de la création du compte');
 
       // Générer un slug unique
       const slug = await animateurService.generateUniqueSlug(data.nom, data.prenom);
 
       // Créer l'animateur dans Supabase
       const animateurData = {
-        firebase_user_id: userCredential.user.uid,
+        firebase_user_id: authData.user.id,
         nom: data.nom,
         prenom: data.prenom,
         email: data.email,

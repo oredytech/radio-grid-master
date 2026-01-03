@@ -6,7 +6,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { toast } from 'sonner';
 import { Upload, FileText, Check, X } from 'lucide-react';
 import * as XLSX from 'xlsx';
-import { programsService } from '@/services/firebaseService';
+import { programsService } from '@/services/supabaseService';
 import { useAuth } from '@/contexts/SupabaseAuthContext';
 
 interface ImportedProgram {

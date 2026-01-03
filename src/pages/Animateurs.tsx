@@ -10,7 +10,7 @@ import { useAuth } from '@/contexts/SupabaseAuthContext';
 import Navigation from '@/components/Navigation';
 import AnimateurForm from '@/components/AnimateurForm';
 import { Animateur } from '@/types/animateur';
-import { animateursService } from '@/services/firebaseService';
+import { animateursService } from '@/services/supabaseService';
 import { toast } from 'sonner';
 
 const Animateurs = () => {

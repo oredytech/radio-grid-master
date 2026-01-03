@@ -8,7 +8,7 @@ import { useAuth } from '@/contexts/SupabaseAuthContext';
 import Navigation from '@/components/Navigation';
 import ProgramCard from '@/components/ProgramCard';
 import { Program } from '@/types/program';
-import { programsService, animateursService } from '@/services/firebaseService';
+import { programsService, animateursService } from '@/services/supabaseService';
 import { conducteurService } from '@/services/conducteurService';
 import { getCurrentTime, getCurrentDay, isCurrentProgram } from '@/utils/timeUtils';
 import { toast } from 'sonner';

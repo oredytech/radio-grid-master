@@ -11,8 +11,7 @@ import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '
 import { toast } from 'sonner';
 import { animateurService } from '@/services/animateurService';
 import { Invitation } from '@/types/animateur';
-import { signInWithEmailAndPassword, createUserWithEmailAndPassword } from 'firebase/auth';
-import { auth } from '@/config/firebase';
+import { supabase } from '@/integrations/supabase/client';
 
 const invitationSchema = z.object({
   nom: z.string().min(1, 'Le nom est requis'),
@@ -78,19 +77,28 @@ export default function AnimateurInvitation() {
 
     setSubmitting(true);
     try {
-      // Créer le compte Firebase
-      const userCredential = await createUserWithEmailAndPassword(
-        auth,
-        invitation.email,
-        data.password
-      );
+      // Créer le compte Supabase
+      const { data: authData, error: authError } = await supabase.auth.signUp({
+        email: invitation.email,
+        password: data.password,
+        options: {
+          emailRedirectTo: `${window.location.origin}/${invitation.radio_slug}/animateur`,
+          data: {
+            name: `${data.prenom} ${data.nom}`,
+            role: 'animateur',
+          },
+        },
+      });
+
+      if (authError) throw authError;
+      if (!authData.user) throw new Error('Erreur lors de la création du compte');
 
       // Générer un slug unique
       const slug = await animateurService.generateUniqueSlug(data.nom, data.prenom);
 
       // Accepter l'invitation et créer l'animateur
       await animateurService.acceptInvitation(token!, {
-        firebase_user_id: userCredential.user.uid,
+        firebase_user_id: authData.user.id,
         nom: data.nom,
         prenom: data.prenom,
         email: invitation.email,
