@@ -3,7 +3,7 @@ import { useState, useEffect } from 'react';
 import ProgramCard from './ProgramCard';
 import { Program } from '@/types/program';
 import { programsService } from '@/services/firebaseService';
-import { useAuth } from '@/contexts/AuthContext';
+import { useAuth } from '@/contexts/SupabaseAuthContext';
 
 interface ProgramGridViewProps {
   programs: Program[];

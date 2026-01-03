@@ -31,7 +31,7 @@ import { programsService } from '@/services/firebaseService';
 import { toast } from 'sonner';
 import { Link } from 'react-router-dom';
 import { ProgramGridView } from './ProgramGridView';
-import { useAuth } from '@/contexts/AuthContext';
+import { useAuth } from '@/contexts/SupabaseAuthContext';
 
 interface SortConfig {
   key: string;

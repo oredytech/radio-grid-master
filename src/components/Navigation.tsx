@@ -12,7 +12,7 @@ import {
   Menu, 
   X 
 } from 'lucide-react';
-import { useAuth } from '@/contexts/AuthContext';
+import { useAuth } from '@/contexts/SupabaseAuthContext';
 import { toast } from 'sonner';
 
 const Navigation = () => {
@@ -51,9 +51,9 @@ const Navigation = () => {
             </div>
             <div className="hidden xs:block truncate">
               <span className="text-sm sm:text-lg lg:text-xl font-bold bg-gradient-to-r from-primary to-accent bg-clip-text text-transparent truncate">
-                {user?.radioName || 'RADIO PROGRAMMER'}
+                {user?.user_metadata?.radio_name || 'RADIO PROGRAMMER'}
               </span>
-              {user?.radioName && (
+              {user?.user_metadata?.radio_name && (
                 <div className="text-xs text-muted-foreground truncate">
                   Radio Programmer
                 </div>
@@ -108,10 +108,10 @@ const Navigation = () => {
             <div className="hidden sm:flex items-center space-x-2 text-xs sm:text-sm text-muted-foreground min-w-0">
               <span className="hidden md:inline">Bonjour,</span>
               <span className="font-medium text-foreground truncate max-w-[100px] lg:max-w-none">
-                {user?.name}
+                {user?.user_metadata?.name}
               </span>
               <span className="hidden lg:inline text-xs">
-                ({user?.role})
+                ({user?.user_metadata?.role})
               </span>
             </div>
             
@@ -167,8 +167,8 @@ const Navigation = () => {
               
               <div className="border-t border-gray-200 dark:border-gray-700 pt-4 mt-4">
                 <div className="px-3 py-2 text-sm text-muted-foreground">
-                  <div>Connecté en tant que: <span className="font-medium text-foreground">{user?.name}</span></div>
-                  <div className="text-xs mt-1">{user?.role} - {user?.radioName}</div>
+                  <div>Connecté en tant que: <span className="font-medium text-foreground">{user?.user_metadata?.name}</span></div>
+                  <div className="text-xs mt-1">{user?.user_metadata?.role} - {user?.user_metadata?.radio_name}</div>
                 </div>
                 <Button
                   variant="outline"

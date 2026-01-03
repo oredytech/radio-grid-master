@@ -4,7 +4,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Card, CardContent } from '@/components/ui/card';
 import { Radio, Plus, Search, Upload } from 'lucide-react';
-import { useAuth } from '@/contexts/AuthContext';
+import { useAuth } from '@/contexts/SupabaseAuthContext';
 import { Program } from '@/types/program';
 import { Animateur } from '@/types/animateur';
 import { programsService } from '@/services/firebaseService';
